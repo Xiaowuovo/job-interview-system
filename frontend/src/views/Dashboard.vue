@@ -244,6 +244,11 @@ export default {
     this.loadData()
     this.loadPointsStats()
     this.initCharts()
+    
+    // 监听事件总线，刷新数据
+    this.$bus.$on(this.$events.TEST_COMPLETED, this.onTestCompleted)
+    this.$bus.$on(this.$events.INTERVIEW_COMPLETED, this.onInterviewCompleted)
+    this.$bus.$on(this.$events.WRONG_QUESTION_CHANGED, this.onWrongQuestionChanged)
   },
   beforeDestroy() {
     if (this.studyChart) {
@@ -252,6 +257,10 @@ export default {
     if (this.categoryChart) {
       this.categoryChart.dispose()
     }
+    // 移除事件监听
+    this.$bus.$off(this.$events.TEST_COMPLETED, this.onTestCompleted)
+    this.$bus.$off(this.$events.INTERVIEW_COMPLETED, this.onInterviewCompleted)
+    this.$bus.$off(this.$events.WRONG_QUESTION_CHANGED, this.onWrongQuestionChanged)
   },
   methods: {
     getGreeting() {
@@ -266,9 +275,9 @@ export default {
       // 加载教程
       this.loading.tutorials = true
       this.$http.get('/tutorials').then(res => {
-        if (res.data.code === 200) {
-          this.stats.tutorialCount = res.data.data.length
-          this.recentTutorials = res.data.data.slice(0, 5)
+        if (res.data) {
+          this.stats.tutorialCount = res.data.length
+          this.recentTutorials = res.data.slice(0, 5)
         }
       }).finally(() => {
         this.loading.tutorials = false
@@ -276,33 +285,33 @@ export default {
 
       // 加载题目数量
       this.$http.get('/questions').then(res => {
-        if (res.data.code === 200) {
-          this.stats.questionCount = res.data.data.length
+        if (res.data) {
+          this.stats.questionCount = res.data.length
         }
       })
 
       // 加载测试统计
       this.$http.get(`/test-records/statistics/${user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.stats.testCount = res.data.data.totalTests
-          this.stats.avgScore = res.data.data.averageScore ? res.data.data.averageScore.toFixed(1) : 0
-          this.categoryData = res.data.data.categoryAvgScore || {}
+        if (res.data) {
+          this.stats.testCount = res.data.totalTests
+          this.stats.avgScore = res.data.averageScore ? res.data.averageScore.toFixed(1) : 0
+          this.categoryData = res.data.categoryAvgScore || {}
           this.updateCategoryChart()
         }
       })
 
       // 加载错题统计
       this.$http.get(`/wrong-questions/statistics/${user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.stats.wrongQuestionCount = res.data.data.totalWrongQuestions || 0
+        if (res.data) {
+          this.stats.wrongQuestionCount = res.data.totalWrongQuestions || 0
         }
       })
 
       // 加载知识点学习统计
       this.$http.get(`/knowledge/statistics/${user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.stats.knowledgeCount = res.data.data.totalKnowledgePoints || 0
-          this.updateStudyChart(res.data.data)
+        if (res.data) {
+          this.stats.knowledgeCount = res.data.totalKnowledgePoints || 0
+          this.updateStudyChart(res.data)
         }
       })
     },
@@ -419,10 +428,10 @@ export default {
     },
     loadPointsStats() {
       this.$http.get(`/points/stats/${this.user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.pointsStats = res.data.data
+        if (res.data) {
+          this.pointsStats = res.data
           // 更新用户积分显示
-          this.user.points = res.data.data.totalPoints
+          this.user.points = res.data.totalPoints
         }
       }).catch(() => {
         // 初始化默认值
@@ -437,16 +446,14 @@ export default {
     dailySignIn() {
       this.signingIn = true
       this.$http.post(`/points/signin/${this.user.id}`).then(res => {
-        if (res.data.code === 200) {
-          const result = res.data.data
+        if (res.data) {
+          const result = res.data
           this.$message.success(result.message)
           this.loadPointsStats() // 重新加载积分统计
 
           // 更新本地用户信息
           this.user.points = (this.user.points || 0) + result.points
           localStorage.setItem('user', JSON.stringify(this.user))
-        } else {
-          this.$message.warning(res.data.message)
         }
       }).catch(err => {
         this.$message.error('签到失败')
@@ -458,14 +465,43 @@ export default {
       if (!dateStr) return ''
       const date = new Date(dateStr)
       return `${date.getMonth() + 1}-${date.getDate()}`
+    },
+    // 事件处理方法
+    onTestCompleted(data) {
+      console.log('测试完成，刷新数据', data)
+      // 刷新测试统计和错题统计
+      const user = this.user
+      this.$http.get(`/test-records/statistics/${user.id}`).then(res => {
+        if (res.data) {
+          this.stats.testCount = res.data.totalTests
+          this.stats.avgScore = res.data.averageScore ? res.data.averageScore.toFixed(1) : 0
+          this.categoryData = res.data.categoryAvgScore || {}
+          this.updateCategoryChart()
+        }
+      })
+    },
+    onInterviewCompleted(data) {
+      console.log('面试完成，刷新数据', data)
+      // 可以刷新面试相关统计
+    },
+    onWrongQuestionChanged() {
+      console.log('错题变化，刷新数据')
+      const user = this.user
+      this.$http.get(`/wrong-questions/statistics/${user.id}`).then(res => {
+        if (res.data) {
+          this.stats.wrongQuestionCount = res.data.totalWrongQuestions || 0
+        }
+      })
     }
   }
 }
 </script>
 
 <style scoped>
+/* 现代化 Dashboard - 支持浅色/深色主题 */
 .dashboard {
   padding: 0;
+  animation: fadeInUp 0.4s ease;
 }
 
 .mt-20 {
@@ -474,7 +510,15 @@ export default {
 
 /* Welcome Card */
 .welcome-card {
-  background: #fff;
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+  overflow: hidden;
+}
+
+.welcome-card /deep/ .el-card__body {
+  padding: 28px;
+  background: linear-gradient(135deg, var(--lc-primary-bg) 0%, transparent 100%);
 }
 
 .welcome-content {
@@ -489,13 +533,17 @@ export default {
 
 .welcome-text h2 {
   margin-bottom: 10px;
-  color: #303133;
+  color: var(--lc-text-primary);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 .welcome-text p {
-  color: #909399;
-  font-size: 14px;
+  color: var(--lc-text-secondary);
+  font-size: 15px;
   margin-bottom: 15px;
+  line-height: 1.6;
 }
 
 .quick-info {
@@ -507,106 +555,173 @@ export default {
   margin-left: 40px;
 }
 
+.welcome-actions /deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: var(--lc-radius-lg);
+  transition: all var(--lc-transition);
+}
+
+.welcome-actions /deep/ .el-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lc-shadow-primary);
+}
+
 .signin-days {
-  margin-top: 10px;
-  color: #E6A23C;
-  font-size: 12px;
+  margin-top: 12px;
+  color: var(--lc-primary);
+  font-size: 13px;
   font-weight: 600;
 }
 
 /* Stat Cards */
 .stat-card {
-  border: none;
-  transition: all 0.3s;
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+  transition: all var(--lc-transition);
   cursor: pointer;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  transform: translateY(-4px);
+  border-color: var(--lc-primary) !important;
+  box-shadow: var(--lc-shadow-lg);
 }
 
 .stat-card /deep/ .el-card__body {
   display: flex;
   align-items: center;
-  padding: 20px;
+  padding: 22px;
 }
 
 .stat-icon-wrapper {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
+  width: 54px;
+  height: 54px;
+  border-radius: var(--lc-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px;
+  margin-right: 16px;
   color: #fff;
   font-size: 24px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: var(--lc-shadow-sm);
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #303133;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--lc-text-primary);
   line-height: 1.2;
+  letter-spacing: -0.5px;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #909399;
-  margin-top: 5px;
+  color: var(--lc-text-muted);
+  margin-top: 4px;
 }
 
 .stat-trend {
   font-size: 12px;
-  margin-top: 5px;
+  margin-top: 6px;
+  font-weight: 500;
 }
 
 .stat-trend i {
-  margin-right: 2px;
-}
-
-.quick-info {
-  margin-top: 15px;
+  margin-right: 3px;
 }
 
 /* Content Cards */
 .content-card {
   height: 100%;
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+.content-card /deep/ .el-card__header {
+  background: transparent;
+  border-bottom: 1px solid var(--lc-border);
+  padding: 18px 22px;
 }
 
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--lc-text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.card-title i {
+  color: var(--lc-primary);
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+/* Table styles */
+.content-card /deep/ .el-table {
+  background: transparent !important;
+  color: var(--lc-text-primary);
+}
+
+.content-card /deep/ .el-table tr {
+  background: transparent !important;
+}
+
+.content-card /deep/ .el-table th {
+  background: var(--lc-bg-tertiary) !important;
+  color: var(--lc-text-secondary);
+}
+
+.content-card /deep/ .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background: var(--lc-bg-hover) !important;
+}
+
+.content-card /deep/ .el-table td, 
+.content-card /deep/ .el-table th {
+  border-bottom: 1px solid var(--lc-border);
 }
 
 .tutorial-link {
   cursor: pointer;
-  color: #606266;
-  transition: color 0.2s;
+  color: var(--lc-text-primary);
+  transition: color var(--lc-transition);
+  font-weight: 500;
 }
 
 .tutorial-link:hover {
-  color: #409EFF;
+  color: var(--lc-primary);
 }
 
 .date-text {
-  color: #C0C4CC;
+  color: var(--lc-text-muted);
   font-size: 12px;
 }
 
 /* Charts */
 .chart-card {
   height: 420px;
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+.chart-card /deep/ .el-card__header {
+  background: transparent;
+  border-bottom: 1px solid var(--lc-border);
+  padding: 18px 22px;
 }
 
 /* Action Grid */
 .action-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  gap: 14px;
 }
 
 .action-item {
@@ -614,35 +729,88 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background: #f9fafc;
-  border-radius: 8px;
+  padding: 18px;
+  background: var(--lc-bg-tertiary);
+  border-radius: var(--lc-radius-lg);
   cursor: pointer;
-  transition: all 0.3s;
-  border: 1px solid #ebeef5;
+  transition: all var(--lc-transition);
+  border: 1px solid transparent;
 }
 
 .action-item:hover {
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  transform: translateY(-2px);
-  border-color: #dcdfe6;
+  background: var(--lc-bg-hover);
+  border-color: var(--lc-primary);
+  transform: translateY(-3px);
+  box-shadow: var(--lc-shadow);
 }
 
 .action-icon {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: var(--lc-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 22px;
   margin-bottom: 10px;
 }
 
 .action-item span {
-  font-size: 14px;
-  color: #606266;
+  font-size: 13px;
+  color: var(--lc-text-secondary);
   font-weight: 500;
+}
+
+.action-item:hover span {
+  color: var(--lc-text-primary);
+}
+
+/* Tags */
+/deep/ .el-tag {
+  background: var(--lc-primary-bg) !important;
+  border-color: transparent !important;
+  color: var(--lc-primary) !important;
+  border-radius: var(--lc-radius-full);
+}
+
+/deep/ .el-tag--info {
+  background: var(--lc-bg-tertiary) !important;
+  color: var(--lc-text-secondary) !important;
+}
+
+/deep/ .el-tag--success {
+  background: var(--lc-success-bg) !important;
+  color: var(--lc-success) !important;
+}
+
+/deep/ .el-tag--warning {
+  background: var(--lc-warning-bg) !important;
+  color: var(--lc-warning) !important;
+}
+
+/deep/ .el-tag--danger {
+  background: var(--lc-danger-bg) !important;
+  color: var(--lc-danger) !important;
+}
+
+/* Button text */
+/deep/ .el-button--text {
+  color: var(--lc-primary) !important;
+}
+
+/deep/ .el-button--text:hover {
+  color: var(--lc-primary-light) !important;
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

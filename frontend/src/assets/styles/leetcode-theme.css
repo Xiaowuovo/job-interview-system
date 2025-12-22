@@ -1,0 +1,427 @@
+/* 
+ * InterviewPro 现代化主题系统
+ * 参考 LeetCode 设计，融合现代 UI 趋势
+ * 支持浅色/深色模式，默认浅色
+ */
+
+/* ========== 基础变量 ========== */
+:root {
+  /* 主色调 - 橙色系 */
+  --lc-primary: #ff6b00;
+  --lc-primary-light: #ff8533;
+  --lc-primary-dark: #e65c00;
+  --lc-primary-bg: rgba(255, 107, 0, 0.08);
+  
+  /* 渐变色 */
+  --lc-gradient-primary: linear-gradient(135deg, #ff6b00 0%, #ff8533 100%);
+  --lc-gradient-success: linear-gradient(135deg, #00b8a3 0%, #00d4bb 100%);
+  --lc-gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  /* 状态颜色 */
+  --lc-success: #00b8a3;
+  --lc-success-bg: rgba(0, 184, 163, 0.1);
+  --lc-warning: #faad14;
+  --lc-warning-bg: rgba(250, 173, 20, 0.1);
+  --lc-danger: #ff4d4f;
+  --lc-danger-bg: rgba(255, 77, 79, 0.1);
+  --lc-info: #1890ff;
+  --lc-info-bg: rgba(24, 144, 255, 0.1);
+  
+  /* 难度颜色 */
+  --lc-easy: #00b8a3;
+  --lc-medium: #faad14;
+  --lc-hard: #ff4d4f;
+  
+  /* 圆角 */
+  --lc-radius-xs: 4px;
+  --lc-radius-sm: 6px;
+  --lc-radius: 8px;
+  --lc-radius-md: 10px;
+  --lc-radius-lg: 12px;
+  --lc-radius-xl: 16px;
+  --lc-radius-2xl: 20px;
+  --lc-radius-full: 9999px;
+  
+  /* 字体 */
+  --lc-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --lc-font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  
+  /* 字号 */
+  --lc-text-xs: 12px;
+  --lc-text-sm: 13px;
+  --lc-text-base: 14px;
+  --lc-text-md: 15px;
+  --lc-text-lg: 16px;
+  --lc-text-xl: 18px;
+  --lc-text-2xl: 20px;
+  --lc-text-3xl: 24px;
+  --lc-text-4xl: 28px;
+  
+  /* 过渡 */
+  --lc-transition-fast: 0.15s ease;
+  --lc-transition: 0.2s ease;
+  --lc-transition-slow: 0.3s ease;
+  --lc-transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ========== 浅色主题（默认） ========== */
+:root,
+[data-theme="light"] {
+  /* 背景色 */
+  --lc-bg-primary: #f8fafc;
+  --lc-bg-secondary: #ffffff;
+  --lc-bg-tertiary: #f1f5f9;
+  --lc-bg-card: #ffffff;
+  --lc-bg-hover: #f8fafc;
+  --lc-bg-active: #f1f5f9;
+  --lc-bg-sidebar: #ffffff;
+  --lc-bg-header: rgba(255, 255, 255, 0.9);
+  --lc-bg-input: #ffffff;
+  --lc-bg-code: #f8fafc;
+  
+  /* 文字颜色 */
+  --lc-text-primary: #1e293b;
+  --lc-text-secondary: #475569;
+  --lc-text-muted: #94a3b8;
+  --lc-text-placeholder: #cbd5e1;
+  --lc-text-inverse: #ffffff;
+  
+  /* 边框 */
+  --lc-border: #e2e8f0;
+  --lc-border-light: #f1f5f9;
+  --lc-border-dark: #cbd5e1;
+  --lc-border-focus: var(--lc-primary);
+  
+  /* 阴影 */
+  --lc-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --lc-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+  --lc-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --lc-shadow-md: 0 6px 16px rgba(0, 0, 0, 0.1);
+  --lc-shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.12);
+  --lc-shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+  --lc-shadow-primary: 0 4px 14px rgba(255, 107, 0, 0.25);
+  --lc-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+  
+  /* 遮罩 */
+  --lc-overlay: rgba(0, 0, 0, 0.45);
+  --lc-overlay-light: rgba(0, 0, 0, 0.02);
+}
+
+/* ========== 深色主题 ========== */
+[data-theme="dark"] {
+  /* 背景色 */
+  --lc-bg-primary: #0f0f0f;
+  --lc-bg-secondary: #1a1a1a;
+  --lc-bg-tertiary: #262626;
+  --lc-bg-card: #1a1a1a;
+  --lc-bg-hover: #262626;
+  --lc-bg-active: #333333;
+  --lc-bg-sidebar: #141414;
+  --lc-bg-header: rgba(20, 20, 20, 0.95);
+  --lc-bg-input: #262626;
+  --lc-bg-code: #1e1e1e;
+  
+  /* 文字颜色 */
+  --lc-text-primary: #f1f5f9;
+  --lc-text-secondary: #94a3b8;
+  --lc-text-muted: #64748b;
+  --lc-text-placeholder: #475569;
+  --lc-text-inverse: #0f0f0f;
+  
+  /* 边框 */
+  --lc-border: #2d2d2d;
+  --lc-border-light: #262626;
+  --lc-border-dark: #404040;
+  --lc-border-focus: var(--lc-primary);
+  
+  /* 阴影 */
+  --lc-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --lc-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --lc-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --lc-shadow-md: 0 6px 16px rgba(0, 0, 0, 0.5);
+  --lc-shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.6);
+  --lc-shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.7);
+  --lc-shadow-primary: 0 4px 14px rgba(255, 107, 0, 0.3);
+  --lc-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+  
+  /* 遮罩 */
+  --lc-overlay: rgba(0, 0, 0, 0.7);
+  --lc-overlay-light: rgba(255, 255, 255, 0.02);
+}
+
+/* 全局样式重置 */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* LeetCode风格卡片 */
+.lc-card {
+  background: var(--lc-bg-card);
+  border-radius: var(--lc-radius-lg);
+  border: 1px solid var(--lc-border);
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.lc-card:hover {
+  border-color: var(--lc-primary);
+  box-shadow: var(--lc-shadow);
+}
+
+/* LeetCode风格按钮 */
+.lc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: var(--lc-radius);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.lc-btn-primary {
+  background: var(--lc-primary);
+  color: #000;
+}
+
+.lc-btn-primary:hover {
+  background: var(--lc-primary-light);
+}
+
+.lc-btn-secondary {
+  background: var(--lc-bg-tertiary);
+  color: var(--lc-text-primary);
+  border: 1px solid var(--lc-border);
+}
+
+.lc-btn-secondary:hover {
+  background: var(--lc-bg-hover);
+  border-color: var(--lc-border-light);
+}
+
+/* 难度标签 */
+.lc-difficulty {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.lc-difficulty-easy {
+  background: rgba(0, 184, 163, 0.15);
+  color: var(--lc-easy);
+}
+
+.lc-difficulty-medium {
+  background: rgba(255, 192, 30, 0.15);
+  color: var(--lc-medium);
+}
+
+.lc-difficulty-hard {
+  background: rgba(239, 71, 67, 0.15);
+  color: var(--lc-hard);
+}
+
+/* 进度条 */
+.lc-progress {
+  height: 8px;
+  background: var(--lc-bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.lc-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--lc-primary), var(--lc-primary-light));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* 统计数字 */
+.lc-stat {
+  text-align: center;
+}
+
+.lc-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--lc-text-primary);
+  line-height: 1.2;
+}
+
+.lc-stat-label {
+  font-size: 13px;
+  color: var(--lc-text-muted);
+  margin-top: 4px;
+}
+
+/* 列表项 */
+.lc-list-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: var(--lc-radius);
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+.lc-list-item:hover {
+  background: var(--lc-bg-hover);
+}
+
+/* 标签 */
+.lc-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: var(--lc-bg-tertiary);
+  color: var(--lc-text-secondary);
+}
+
+.lc-tag-primary {
+  background: rgba(255, 161, 22, 0.15);
+  color: var(--lc-primary);
+}
+
+/* 输入框 */
+.lc-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--lc-bg-tertiary);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius);
+  color: var(--lc-text-primary);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.lc-input:focus {
+  outline: none;
+  border-color: var(--lc-primary);
+  box-shadow: 0 0 0 2px rgba(255, 161, 22, 0.2);
+}
+
+/* 分割线 */
+.lc-divider {
+  height: 1px;
+  background: var(--lc-border);
+  margin: 16px 0;
+}
+
+/* 头像 */
+.lc-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--lc-primary), var(--lc-primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* 徽章 */
+.lc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--lc-danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 骨架屏 */
+.lc-skeleton {
+  background: linear-gradient(90deg, var(--lc-bg-tertiary) 25%, var(--lc-bg-hover) 50%, var(--lc-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: var(--lc-radius);
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 工具提示 */
+.lc-tooltip {
+  position: relative;
+}
+
+.lc-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  background: var(--lc-bg-primary);
+  color: var(--lc-text-primary);
+  font-size: 12px;
+  border-radius: var(--lc-radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.lc-tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 动画 */
+.lc-fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--lc-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--lc-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--lc-text-muted);
+}

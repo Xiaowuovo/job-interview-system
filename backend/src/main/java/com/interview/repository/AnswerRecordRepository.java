@@ -31,6 +31,9 @@ public interface AnswerRecordRepository extends JpaRepository<AnswerRecord, Long
 
     // 查询用户最近的答题记录
     List<AnswerRecord> findTop10ByUserIdOrderByCreatedAtDesc(Long userId);
+    
+    // 查询用户的答题记录（按时间倒序）
+    List<AnswerRecord> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     // 新增方法
     List<AnswerRecord> findByUserIdAndCreatedAtBetween(Long userId, java.time.LocalDateTime start, java.time.LocalDateTime end);

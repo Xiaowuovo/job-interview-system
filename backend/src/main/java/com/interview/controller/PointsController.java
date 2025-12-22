@@ -3,7 +3,7 @@ package com.interview.controller;
 import com.interview.common.Result;
 import com.interview.entity.PointsRecord;
 import com.interview.service.PointsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,12 +13,11 @@ import java.util.Map;
  * 积分控制器
  */
 @RestController
-@RequestMapping("/api/points")
-@CrossOrigin(origins = "*")
+@RequestMapping("/points")
+@RequiredArgsConstructor
 public class PointsController {
 
-    @Autowired
-    private PointsService pointsService;
+    private final PointsService pointsService;
 
     /**
      * 每日签到
@@ -26,12 +25,8 @@ public class PointsController {
     @PostMapping("/signin/{userId}")
     public Result<Map<String, Object>> dailySignIn(@PathVariable Long userId) {
         Map<String, Object> result = pointsService.dailySignIn(userId);
-
-        if ((Boolean) result.get("success")) {
-            return Result.success(result);
-        } else {
-            return Result.error(result.get("message").toString());
-        }
+        // 统一返回成功，前端根据success字段判断是否已签到
+        return Result.success(result);
     }
 
     /**

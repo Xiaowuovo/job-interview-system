@@ -3,7 +3,7 @@ package com.interview.controller;
 import com.interview.common.Result;
 import com.interview.entity.DailyQuestion;
 import com.interview.service.DailyQuestionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -14,12 +14,11 @@ import java.util.Map;
  * 每日一题控制器
  */
 @RestController
-@RequestMapping("/api/daily-question")
-@CrossOrigin(origins = "*")
+@RequestMapping("/daily-question")
+@RequiredArgsConstructor
 public class DailyQuestionController {
 
-    @Autowired
-    private DailyQuestionService dailyQuestionService;
+    private final DailyQuestionService dailyQuestionService;
 
     /**
      * 获取今日一题

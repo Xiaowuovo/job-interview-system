@@ -118,22 +118,22 @@ export default {
       const user = JSON.parse(localStorage.getItem('user'))
 
       this.$http.get(`/test-records/user/${user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.testRecords = res.data.data
+        if (res.data) {
+          this.testRecords = res.data
         }
-      })
+      }).catch(() => {})
 
       this.$http.get(`/test-records/statistics/${user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.testStats = res.data.data
+        if (res.data) {
+          this.testStats = res.data
         }
-      })
+      }).catch(() => {})
 
       this.$http.get(`/interview/history/${user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.interviewRecords = res.data.data
+        if (res.data) {
+          this.interviewRecords = res.data
         }
-      })
+      }).catch(() => {})
     },
     getScoreType(score) {
       if (score >= 85) return 'success'
@@ -156,14 +156,119 @@ export default {
 </script>
 
 <style scoped>
+/* 现代化 Records 页面 - 支持浅色/深色主题 */
 .records {
-  padding: 20px;
+  padding: 0;
+  animation: fadeInUp 0.4s ease;
+}
+
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-card__header {
+  border-bottom: 1px solid var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-tabs__item {
+  color: var(--lc-text-secondary);
+}
+
+/deep/ .el-tabs__item.is-active {
+  color: var(--lc-primary);
+}
+
+/deep/ .el-tabs__active-bar {
+  background: var(--lc-primary);
+}
+
+/deep/ .el-table {
+  background: transparent !important;
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-table tr {
+  background: transparent !important;
+}
+
+/deep/ .el-table th {
+  background: var(--lc-bg-tertiary) !important;
+  color: var(--lc-text-secondary);
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-table td {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background: var(--lc-bg-hover) !important;
+}
+
+/deep/ .el-tag--success {
+  background: var(--lc-success-bg);
+  border-color: transparent;
+  color: var(--lc-success);
+}
+
+/deep/ .el-tag--warning {
+  background: var(--lc-warning-bg);
+  border-color: transparent;
+  color: var(--lc-warning);
+}
+
+/deep/ .el-tag--danger {
+  background: var(--lc-danger-bg);
+  border-color: transparent;
+  color: var(--lc-danger);
+}
+
+/deep/ .el-button--text {
+  color: var(--lc-primary);
+}
+
+/deep/ .el-button--text:hover {
+  color: var(--lc-primary-light);
 }
 
 .statistics {
   margin-top: 30px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  padding: 24px;
+  background: var(--lc-bg-tertiary);
+  border-radius: var(--lc-radius-xl);
+  border: 1px solid var(--lc-border);
+}
+
+.statistics h4 {
+  color: var(--lc-text-primary);
+  margin-bottom: 16px;
+}
+
+/deep/ .el-descriptions__body {
+  background: transparent;
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-descriptions-item__label {
+  color: var(--lc-text-secondary);
+}
+
+/deep/ .el-descriptions-item__content {
+  color: var(--lc-text-primary);
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

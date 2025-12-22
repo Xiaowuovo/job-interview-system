@@ -195,13 +195,13 @@ public class AnswerRecordService {
 
         // 更新等级
         if (overall >= 85) {
-            ability.setLevel("EXPERT");
+            ability.setLevel(UserAbilityModel.Level.EXPERT);
         } else if (overall >= 70) {
-            ability.setLevel("ADVANCED");
+            ability.setLevel(UserAbilityModel.Level.ADVANCED);
         } else if (overall >= 50) {
-            ability.setLevel("INTERMEDIATE");
+            ability.setLevel(UserAbilityModel.Level.INTERMEDIATE);
         } else {
-            ability.setLevel("BEGINNER");
+            ability.setLevel(UserAbilityModel.Level.BEGINNER);
         }
     }
 

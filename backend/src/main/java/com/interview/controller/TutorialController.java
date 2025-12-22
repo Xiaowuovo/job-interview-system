@@ -3,7 +3,7 @@ package com.interview.controller;
 import com.interview.common.Result;
 import com.interview.entity.Tutorial;
 import com.interview.service.TutorialService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,12 +12,11 @@ import java.util.List;
  * 教程控制器 - 优化版
  */
 @RestController
-@RequestMapping("/api/tutorials")
-@CrossOrigin(origins = "*")
+@RequestMapping("/tutorials")
+@RequiredArgsConstructor
 public class TutorialController {
 
-    @Autowired
-    private TutorialService tutorialService;
+    private final TutorialService tutorialService;
 
     /**
      * 获取所有教程

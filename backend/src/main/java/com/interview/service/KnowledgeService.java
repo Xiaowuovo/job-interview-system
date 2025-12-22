@@ -52,7 +52,8 @@ public class KnowledgeService {
      * 根据难度获取知识点
      */
     public List<KnowledgePoint> getKnowledgePointsByDifficulty(String difficulty) {
-        return knowledgePointRepository.findByDifficulty(difficulty);
+        KnowledgePoint.Difficulty diff = KnowledgePoint.Difficulty.valueOf(difficulty.toUpperCase());
+        return knowledgePointRepository.findByDifficulty(diff);
     }
 
     /**
@@ -134,10 +135,10 @@ public class KnowledgeService {
 
             // 更新状态
             if (progress >= 100) {
-                record.setStatus("COMPLETED");
+                record.setStatus(StudyRecord.Status.COMPLETED);
                 record.setMasteryLevel(100);
             } else if (progress > 0) {
-                record.setStatus("IN_PROGRESS");
+                record.setStatus(StudyRecord.Status.IN_PROGRESS);
                 record.setMasteryLevel(progress);
             }
         } else {
@@ -148,7 +149,7 @@ public class KnowledgeService {
             record.setProgress(progress);
             record.setStudyTime(studyTime);
             record.setLastStudyAt(LocalDateTime.now());
-            record.setStatus(progress >= 100 ? "COMPLETED" : "IN_PROGRESS");
+            record.setStatus(progress >= 100 ? StudyRecord.Status.COMPLETED : StudyRecord.Status.IN_PROGRESS);
             record.setMasteryLevel(progress);
         }
 
@@ -182,13 +183,13 @@ public class KnowledgeService {
 
         // 已完成数量
         long completedCount = records.stream()
-                .filter(r -> "COMPLETED".equals(r.getStatus()))
+                .filter(r -> StudyRecord.Status.COMPLETED.equals(r.getStatus()))
                 .count();
         statistics.put("completedCount", completedCount);
 
         // 学习中数量
         long inProgressCount = records.stream()
-                .filter(r -> "IN_PROGRESS".equals(r.getStatus()))
+                .filter(r -> StudyRecord.Status.IN_PROGRESS.equals(r.getStatus()))
                 .count();
         statistics.put("inProgressCount", inProgressCount);
 

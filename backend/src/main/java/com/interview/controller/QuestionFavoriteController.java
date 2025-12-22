@@ -4,7 +4,7 @@ import com.interview.common.Result;
 import com.interview.entity.Question;
 import com.interview.entity.QuestionFavorite;
 import com.interview.service.QuestionFavoriteService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,12 +14,11 @@ import java.util.Map;
  * 题目收藏控制器
  */
 @RestController
-@RequestMapping("/api/favorites")
-@CrossOrigin(origins = "*")
+@RequestMapping("/favorites")
+@RequiredArgsConstructor
 public class QuestionFavoriteController {
 
-    @Autowired
-    private QuestionFavoriteService favoriteService;
+    private final QuestionFavoriteService favoriteService;
 
     /**
      * 添加收藏

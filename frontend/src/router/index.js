@@ -97,4 +97,40 @@ const router = new VueRouter({
   routes
 })
 
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  // 登录页面直接放行
+  if (to.path === '/login') {
+    next()
+    return
+  }
+
+  // 检查是否已登录
+  const userStr = localStorage.getItem('user')
+  if (!userStr) {
+    // 未登录，跳转到登录页
+    next('/login')
+    return
+  }
+
+  try {
+    const user = JSON.parse(userStr)
+    if (!user || !user.id) {
+      // 用户信息无效
+      localStorage.removeItem('user')
+      next('/login')
+      return
+    }
+  } catch (e) {
+    // 用户信息解析失败
+    console.error('用户信息解析失败:', e)
+    localStorage.removeItem('user')
+    next('/login')
+    return
+  }
+
+  // 已登录，继续访问
+  next()
+})
+
 export default router

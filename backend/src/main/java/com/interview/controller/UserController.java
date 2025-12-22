@@ -1,59 +1,57 @@
 package com.interview.controller;
 
 import com.interview.common.Result;
+import com.interview.dto.LoginRequest;
+import com.interview.dto.RegisterRequest;
+import com.interview.dto.UserResponse;
 import com.interview.entity.User;
 import com.interview.entity.UserAbilityModel;
 import com.interview.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
+@Validated
 public class UserController {
 
     private final UserService userService;
 
     @PostMapping("/register")
-    public Result<User> register(@RequestBody User user) {
-        try {
-            User registeredUser = userService.registerUser(user);
-            return Result.success(registeredUser);
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
+    public Result<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(request.getPassword());
+        user.setEmail(request.getEmail());
+        user.setNickname(request.getNickname());
+        user.setTargetPosition(request.getTargetPosition());
+        
+        User registeredUser = userService.registerUser(user);
+        return Result.success(UserResponse.fromEntity(registeredUser));
     }
 
     @PostMapping("/login")
-    public Result<User> login(@RequestBody Map<String, String> credentials) {
-        String username = credentials.get("username");
-        String password = credentials.get("password");
-
-        try {
-            User user = userService.login(username, password);
-            return Result.success(user);
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
+    public Result<UserResponse> login(@Valid @RequestBody LoginRequest request) {
+        User user = userService.login(request.getUsername(), request.getPassword());
+        return Result.success(UserResponse.fromEntity(user));
     }
 
     @GetMapping("/{id}")
-    public Result<User> getUser(@PathVariable Long id) {
+    public Result<UserResponse> getUser(@PathVariable Long id) {
         return userService.getUserById(id)
+                .map(UserResponse::fromEntity)
                 .map(Result::success)
                 .orElse(Result.error("用户不存在"));
     }
 
     @PutMapping("/{id}")
-    public Result<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        try {
-            User updatedUser = userService.updateUser(id, user);
-            return Result.success(updatedUser);
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
+    public Result<UserResponse> updateUser(@PathVariable Long id, @RequestBody User user) {
+        User updatedUser = userService.updateUser(id, user);
+        return Result.success(UserResponse.fromEntity(updatedUser));
     }
 
     @GetMapping("/{id}/ability")

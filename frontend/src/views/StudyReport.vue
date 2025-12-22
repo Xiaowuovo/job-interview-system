@@ -229,8 +229,8 @@ export default {
       const params = this.period ? `?period=${this.period}` : ''
 
       this.$http.get(`/reports/study/${this.user.id}${params}`).then(res => {
-        if (res.data.code === 200) {
-          this.report = res.data.data
+        if (res.data) {
+          this.report = res.data
           this.$nextTick(() => {
             this.renderAbilityChart()
           })
@@ -241,13 +241,13 @@ export default {
     },
     loadTrend() {
       this.$http.get(`/reports/trend/${this.user.id}?days=30`).then(res => {
-        if (res.data.code === 200) {
-          this.trendData = res.data.data
+        if (res.data) {
+          this.trendData = res.data
           this.$nextTick(() => {
             this.renderTrendChart()
           })
         }
-      })
+      }).catch(() => {})
     },
     renderTrendChart() {
       if (!this.trendData) return
@@ -397,14 +397,39 @@ export default {
 </script>
 
 <style scoped>
+/* 现代化 StudyReport 页面 - 支持浅色/深色主题 */
 .study-report {
-  padding: 20px;
+  padding: 0;
   max-width: 1400px;
   margin: 0 auto;
+  animation: fadeInUp 0.4s ease;
+}
+
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-card__header {
+  border-bottom: 1px solid var(--lc-border);
+  color: var(--lc-text-primary);
 }
 
 .period-selector {
   margin: 20px 0;
+}
+
+/deep/ .el-radio-button__inner {
+  background: var(--lc-bg-tertiary);
+  border-color: var(--lc-border);
+  color: var(--lc-text-secondary);
+}
+
+/deep/ .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+  background: var(--lc-gradient-primary);
+  border-color: var(--lc-primary);
+  color: var(--lc-text-inverse);
 }
 
 /* 统计卡片 */
@@ -417,7 +442,7 @@ export default {
 .stat-icon {
   width: 60px;
   height: 60px;
-  border-radius: 50%;
+  border-radius: var(--lc-radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,20 +458,20 @@ export default {
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #303133;
+  color: var(--lc-text-primary);
   line-height: 1;
   margin-bottom: 8px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--lc-text-muted);
   margin-bottom: 5px;
 }
 
 .stat-detail {
   font-size: 12px;
-  color: #C0C4CC;
+  color: var(--lc-text-muted);
 }
 
 /* 错题统计 */
@@ -462,14 +487,14 @@ export default {
 
 .wrong-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--lc-text-muted);
   margin-bottom: 10px;
 }
 
 .wrong-value {
   font-size: 32px;
   font-weight: 700;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 /* 成就徽章 */
@@ -481,7 +506,7 @@ export default {
 .empty-achievements {
   text-align: center;
   padding: 40px 0;
-  color: #909399;
+  color: var(--lc-text-muted);
 }
 
 /* 学习建议 */
@@ -490,19 +515,65 @@ export default {
 }
 
 .suggestion-item {
-  padding: 12px;
+  padding: 12px 16px;
   margin-bottom: 10px;
-  background: #f0f9ff;
-  border-left: 3px solid #409EFF;
-  border-radius: 4px;
+  background: var(--lc-bg-tertiary);
+  border-left: 3px solid var(--lc-primary);
+  border-radius: var(--lc-radius);
 }
 
 .suggestion-item i {
-  color: #409EFF;
+  color: var(--lc-primary);
   margin-right: 8px;
 }
 
 .suggestion-item span {
-  color: #606266;
+  color: var(--lc-text-secondary);
+}
+
+/* 标签样式 */
+/deep/ .el-tag--success {
+  background: var(--lc-success-bg);
+  border-color: transparent;
+  color: var(--lc-success);
+}
+
+/deep/ .el-tag--warning {
+  background: var(--lc-warning-bg);
+  border-color: transparent;
+  color: var(--lc-warning);
+}
+
+/deep/ .el-tag--danger {
+  background: var(--lc-danger-bg);
+  border-color: transparent;
+  color: var(--lc-danger);
+}
+
+/* 按钮样式 */
+/deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+}
+
+/deep/ .el-button--default {
+  background: var(--lc-bg-tertiary);
+  border: 1px solid var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-progress-bar__outer {
+  background: var(--lc-bg-tertiary);
+}
+
+/deep/ .el-progress-bar__inner {
+  background: var(--lc-gradient-primary);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

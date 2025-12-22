@@ -22,6 +22,9 @@ public class StudyRecord {
 
     @Column(name = "study_time")
     private Integer studyTime = 0; // 学习时长（秒）
+    
+    @Column(name = "duration")
+    private Integer duration = 0; // 持续时间（秒）
 
     @Enumerated(EnumType.STRING)
     private Status status = Status.NOT_STARTED;

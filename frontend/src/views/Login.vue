@@ -103,16 +103,14 @@ export default {
           this.loading = true
           this.$http.post('/users/login', this.form)
             .then(res => {
-              if (res.data.code === 200) {
-                localStorage.setItem('user', JSON.stringify(res.data.data))
+              if (res.code === 200) {
+                this.$setCurrentUser(res.data)
                 this.$message.success('登录成功')
                 this.$router.push('/home/dashboard')
-              } else {
-                this.$message.error(res.data.message)
               }
             })
-            .catch(() => {
-              this.$message.error('登录失败，请检查网络或服务器')
+            .catch(err => {
+              console.error('登录失败:', err)
             })
             .finally(() => {
               this.loading = false
@@ -121,6 +119,16 @@ export default {
       })
     },
     handleRegister() {
+      if (!this.form.username || !this.form.password) {
+        this.$message.warning('请先填写用户名和密码')
+        return
+      }
+
+      if (this.form.password.length < 6) {
+        this.$message.warning('密码长度不能少于6位')
+        return
+      }
+
       this.$prompt('请输入邮箱', '注册', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -134,11 +142,13 @@ export default {
         }
         this.$http.post('/users/register', user)
           .then(res => {
-            if (res.data.code === 200) {
+            if (res.code === 200) {
               this.$message.success('注册成功，请登录')
-            } else {
-              this.$message.error(res.data.message)
+              this.form.password = ''
             }
+          })
+          .catch(err => {
+            console.error('注册失败:', err)
           })
       }).catch(() => {})
     }
@@ -147,31 +157,35 @@ export default {
 </script>
 
 <style scoped>
+/* 现代化登录页 - 支持浅色/深色主题 */
 .login-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f0f2f5;
+  background: var(--lc-bg-primary);
   padding: 20px;
+  transition: background-color var(--lc-transition);
 }
 
 .login-wrapper {
   width: 1000px;
-  height: 600px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+  height: 620px;
+  background: var(--lc-bg-card);
+  border-radius: var(--lc-radius-2xl);
+  box-shadow: var(--lc-shadow-xl);
   display: flex;
   overflow: hidden;
+  border: 1px solid var(--lc-border);
+  animation: scaleIn 0.4s ease;
 }
 
-/* Left Side */
+/* Left Side - 品牌展示区 */
 .login-left {
-  flex: 1;
-  background: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%);
+  flex: 1.1;
+  background: var(--lc-gradient-primary);
   position: relative;
-  padding: 60px;
+  padding: 50px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -180,105 +194,275 @@ export default {
 }
 
 .brand-title {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  color: #fff;
+}
+
+.brand-title i {
+  font-size: 28px;
 }
 
 .brand-desc h2 {
   font-size: 36px;
   margin-bottom: 20px;
   line-height: 1.2;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .brand-desc p {
   font-size: 16px;
-  opacity: 0.8;
-  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.8;
+  max-width: 360px;
 }
 
 .brand-footer {
-  font-size: 12px;
-  opacity: 0.6;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-/* Decorative Circles */
+/* Decorative Elements */
 .brand-bg-circle {
   position: absolute;
-  width: 300px;
-  height: 300px;
+  width: 500px;
+  height: 500px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.1);
-  top: -50px;
-  right: -50px;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+  top: -150px;
+  right: -150px;
+  animation: pulse 4s ease-in-out infinite;
 }
 
 .brand-bg-circle-2 {
   position: absolute;
-  width: 200px;
-  height: 200px;
+  width: 350px;
+  height: 350px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.05);
-  bottom: -20px;
-  left: -50px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  bottom: -100px;
+  left: -100px;
+  animation: pulse 4s ease-in-out infinite 1s;
 }
 
-/* Right Side */
+/* Right Side - 表单区 */
 .login-right {
-  flex: 1;
+  flex: 0.9;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 50px;
+  background: var(--lc-bg-card);
 }
 
 .form-container {
   width: 100%;
-  max-width: 360px;
+  max-width: 340px;
 }
 
 .form-title {
   font-size: 28px;
-  color: #303133;
-  margin-bottom: 10px;
+  color: var(--lc-text-primary);
+  margin-bottom: 8px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 .form-subtitle {
-  color: #909399;
-  margin-bottom: 30px;
+  color: var(--lc-text-muted);
+  margin-bottom: 32px;
+  font-size: 14px;
 }
 
-.login-form .el-input__inner {
-  height: 45px;
+/* Form Inputs */
+.login-form /deep/ .el-input__inner {
+  height: 50px;
+  background: var(--lc-bg-input);
+  border: 1px solid var(--lc-border);
+  color: var(--lc-text-primary);
+  border-radius: var(--lc-radius-lg);
+  font-size: 15px;
+  transition: all var(--lc-transition);
+}
+
+.login-form /deep/ .el-input__inner:hover {
+  border-color: var(--lc-border-dark);
+}
+
+.login-form /deep/ .el-input__inner:focus {
+  border-color: var(--lc-primary);
+  box-shadow: 0 0 0 3px var(--lc-primary-bg);
+}
+
+.login-form /deep/ .el-input__inner::placeholder {
+  color: var(--lc-text-placeholder);
+}
+
+.login-form /deep/ .el-input__prefix {
+  color: var(--lc-text-muted);
+}
+
+.login-form /deep/ .el-form-item {
+  margin-bottom: 20px;
 }
 
 .form-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.form-actions /deep/ .el-checkbox__label {
+  color: var(--lc-text-secondary);
+  font-size: 14px;
+}
+
+.form-actions /deep/ .el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: var(--lc-primary);
+  border-color: var(--lc-primary);
 }
 
 .forgot-btn {
-  color: #909399;
+  color: var(--lc-primary) !important;
+  font-size: 14px;
+}
+
+.forgot-btn:hover {
+  color: var(--lc-primary-light) !important;
 }
 
 .submit-btn {
-  height: 45px;
+  height: 50px;
   font-size: 16px;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  background: var(--lc-gradient-primary) !important;
+  border: none !important;
+  color: var(--lc-text-inverse) !important;
+  font-weight: 600;
+  border-radius: var(--lc-radius-lg);
+  transition: all var(--lc-transition);
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lc-shadow-primary);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+/* Register Button */
+.login-form /deep/ .el-button--default {
+  height: 50px;
+  background: transparent;
+  border: 1px solid var(--lc-border);
+  color: var(--lc-text-primary);
+  border-radius: var(--lc-radius-lg);
+  font-size: 15px;
+  transition: all var(--lc-transition);
+}
+
+.login-form /deep/ .el-button--default:hover {
+  border-color: var(--lc-primary);
+  color: var(--lc-primary);
+  background: var(--lc-primary-bg);
 }
 
 .demo-info {
-  margin-top: 30px;
+  margin-top: 28px;
+}
+
+.demo-info /deep/ .el-alert {
+  background: var(--lc-primary-bg);
+  border: 1px solid rgba(255, 107, 0, 0.2);
+  border-radius: var(--lc-radius-lg);
+  padding: 14px 16px;
+}
+
+.demo-info /deep/ .el-alert__title {
+  color: var(--lc-primary);
+  font-weight: 600;
+}
+
+.demo-info /deep/ .el-alert__icon {
+  color: var(--lc-primary);
 }
 
 .demo-accounts {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--lc-text-secondary);
+  margin-top: 8px;
+}
+
+.demo-accounts span {
+  padding: 4px 0;
+}
+
+/* 响应式 */
+@media (max-width: 900px) {
+  .login-wrapper {
+    flex-direction: column;
+    height: auto;
+    width: 100%;
+    max-width: 440px;
+  }
+  
+  .login-left {
+    padding: 40px;
+    min-height: 220px;
+  }
+  
+  .login-right {
+    padding: 40px;
+  }
+  
+  .brand-desc h2 {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+  }
+  
+  .login-left {
+    padding: 30px;
+  }
+  
+  .login-right {
+    padding: 30px;
+  }
+  
+  .form-title {
+    font-size: 24px;
+  }
+}
+
+/* 动画 */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
 }
 </style>

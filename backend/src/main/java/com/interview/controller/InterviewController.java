@@ -5,6 +5,7 @@ import com.interview.entity.InterviewSession;
 import com.interview.entity.InterviewSession.SessionType;
 import com.interview.service.InterviewService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/interview")
 @RequiredArgsConstructor
+@Validated
 public class InterviewController {
 
     private final InterviewService interviewService;
@@ -23,7 +25,8 @@ public class InterviewController {
     @PostMapping("/start")
     public Result<InterviewSession> startInterview(@RequestBody Map<String, Object> request) {
         Long userId = Long.valueOf(request.get("userId").toString());
-        String sessionTypeStr = request.get("sessionType").toString();
+        // sessionType可选，默认为TECHNICAL
+        String sessionTypeStr = request.getOrDefault("sessionType", "TECHNICAL").toString();
         String position = request.get("position").toString();
 
         SessionType sessionType = SessionType.valueOf(sessionTypeStr);
@@ -40,12 +43,8 @@ public class InterviewController {
         Long sessionId = Long.valueOf(request.get("sessionId").toString());
         String message = request.get("message").toString();
 
-        try {
-            Map<String, Object> response = interviewService.chat(sessionId, message);
-            return Result.success(response);
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
+        Map<String, Object> response = interviewService.chat(sessionId, message);
+        return Result.success(response);
     }
 
     /**
@@ -53,12 +52,8 @@ public class InterviewController {
      */
     @PostMapping("/end/{sessionId}")
     public Result<InterviewSession> endInterview(@PathVariable Long sessionId) {
-        try {
-            InterviewSession session = interviewService.endInterview(sessionId);
-            return Result.success(session);
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
+        InterviewSession session = interviewService.endInterview(sessionId);
+        return Result.success(session);
     }
 
     /**

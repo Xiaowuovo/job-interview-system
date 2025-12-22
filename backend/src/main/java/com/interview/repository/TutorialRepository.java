@@ -9,6 +9,11 @@ import java.util.List;
 public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
     List<Tutorial> findByCategory(String category);
     List<Tutorial> findAllByOrderByCreatedAtDesc();
+    
+    /**
+     * 按浏览量倒序查询前10条
+     */
+    List<Tutorial> findTop10ByOrderByViewCountDesc();
 
     /**
      * 按标题模糊搜索

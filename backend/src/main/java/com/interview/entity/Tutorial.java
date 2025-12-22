@@ -19,6 +19,10 @@ public class Tutorial {
     private String content;
 
     private String category; // 技术面试、行为面试、简历指导等
+    
+    private String tags; // 标签
+    
+    private String difficulty; // 难度
 
     @Column(name = "view_count")
     private Integer viewCount = 0;

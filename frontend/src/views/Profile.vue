@@ -222,8 +222,8 @@ export default {
   methods: {
     loadUserInfo() {
       this.$http.get(`/users/${this.userInfo.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.userInfo = res.data.data
+        if (res.data) {
+          this.userInfo = res.data
           localStorage.setItem('user', JSON.stringify(this.userInfo))
 
           // 填充编辑表单
@@ -234,13 +234,13 @@ export default {
             targetPosition: this.userInfo.targetPosition || ''
           }
         }
-      })
+      }).catch(() => {})
     },
     loadPointsRecords() {
       this.$http.get(`/points/records/${this.userInfo.id}`).then(res => {
-        if (res.data.code === 200) {
+        if (res.data) {
           // 只显示最近10条记录
-          this.pointsRecords = res.data.data.slice(0, 10)
+          this.pointsRecords = res.data.slice(0, 10)
         }
       }).catch(() => {
         this.pointsRecords = []
@@ -353,13 +353,11 @@ export default {
     saveProfile() {
       this.$refs.editForm.validate(valid => {
         if (valid) {
-          this.$http.put(`/users/${this.userInfo.id}`, this.editForm).then(res => {
-            if (res.data.code === 200) {
-              this.$message.success('保存成功')
-              this.editDialogVisible = false
-              this.loadUserInfo()
-            }
-          })
+          this.$http.put(`/users/${this.userInfo.id}`, this.editForm).then(() => {
+            this.$message.success('保存成功')
+            this.editDialogVisible = false
+            this.loadUserInfo()
+          }).catch(() => {})
         }
       })
     },
@@ -398,8 +396,20 @@ export default {
 </script>
 
 <style scoped>
+/* 现代化 Profile 页面 - 支持浅色/深色主题 */
 .profile-container {
-  padding: 20px;
+  padding: 0;
+  animation: fadeInUp 0.4s ease;
+}
+
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-card__header {
+  border-bottom: 1px solid var(--lc-border);
 }
 
 /* 个人信息卡片 */
@@ -411,9 +421,13 @@ export default {
   padding: 20px 0;
 }
 
+/deep/ .el-avatar {
+  background: var(--lc-gradient-primary);
+}
+
 .username {
   margin: 15px 0 10px 0;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .info-section {
@@ -425,30 +439,30 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
-  color: #606266;
+  color: var(--lc-text-secondary);
 }
 
 .info-item i {
   font-size: 18px;
-  color: #909399;
+  color: var(--lc-text-muted);
   margin-right: 10px;
   width: 20px;
 }
 
 .info-item .label {
-  color: #909399;
+  color: var(--lc-text-muted);
   font-size: 14px;
   min-width: 80px;
 }
 
 .info-item .value {
-  color: #303133;
+  color: var(--lc-text-primary);
   font-size: 14px;
   flex: 1;
 }
 
 .info-item .highlight {
-  color: #E6A23C;
+  color: var(--lc-primary);
   font-weight: bold;
   font-size: 16px;
 }
@@ -463,26 +477,28 @@ export default {
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .stat-item {
   display: flex;
   align-items: center;
   padding: 20px;
-  background: #f9fafc;
-  border-radius: 8px;
-  transition: all 0.3s;
+  background: var(--lc-bg-tertiary);
+  border-radius: var(--lc-radius-xl);
+  transition: all var(--lc-transition);
+  border: 1px solid var(--lc-border);
 }
 
 .stat-item:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: var(--lc-primary);
+  box-shadow: var(--lc-shadow);
 }
 
 .stat-icon {
   width: 60px;
   height: 60px;
-  border-radius: 12px;
+  border-radius: var(--lc-radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -498,13 +514,13 @@ export default {
 .stat-value {
   font-size: 24px;
   font-weight: bold;
-  color: #303133;
+  color: var(--lc-text-primary);
   margin-bottom: 5px;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--lc-text-muted);
 }
 
 /* 成就徽章 */
@@ -517,48 +533,120 @@ export default {
 .badge-item {
   text-align: center;
   padding: 20px;
-  background: #f9fafc;
-  border-radius: 8px;
-  transition: all 0.3s;
+  background: var(--lc-bg-tertiary);
+  border-radius: var(--lc-radius-xl);
+  transition: all var(--lc-transition);
   opacity: 0.5;
+  border: 1px solid var(--lc-border);
 }
 
 .badge-item.unlocked {
   opacity: 1;
-  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  background: var(--lc-primary-bg);
+  border-color: var(--lc-primary);
 }
 
 .badge-item.unlocked:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  transform: translateY(-4px);
+  box-shadow: var(--lc-shadow-primary);
 }
 
 .badge-icon {
   font-size: 48px;
-  color: #E6A23C;
+  color: var(--lc-primary);
   margin-bottom: 10px;
 }
 
 .badge-name {
   font-weight: 600;
-  color: #303133;
+  color: var(--lc-text-primary);
   margin-bottom: 5px;
 }
 
 .badge-desc {
   font-size: 12px;
-  color: #909399;
+  color: var(--lc-text-muted);
 }
 
 /* 积分记录 */
 .points-card .empty-records {
   text-align: center;
   padding: 40px 0;
-  color: #909399;
+  color: var(--lc-text-muted);
 }
 
 .points-card .empty-records i {
   font-size: 48px;
   margin-bottom: 10px;
+}
+
+/* 表格样式 */
+/deep/ .el-table {
+  background: transparent !important;
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-table tr {
+  background: transparent !important;
+}
+
+/deep/ .el-table th {
+  background: var(--lc-bg-tertiary) !important;
+  color: var(--lc-text-secondary);
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-table td {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/* 按钮样式 */
+/deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+}
+
+/* 表单样式 */
+/deep/ .el-form-item__label {
+  color: var(--lc-text-secondary);
+}
+
+/deep/ .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-select .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-dialog {
+  background: var(--lc-bg-card);
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-dialog__header {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-dialog__title {
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-tag {
+  background: var(--lc-primary-bg);
+  border-color: transparent;
+  color: var(--lc-primary);
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

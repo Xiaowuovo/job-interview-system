@@ -173,13 +173,13 @@ export default {
   methods: {
     loadAbilityModel() {
       this.$http.get(`/users/${this.user.id}/ability`).then(res => {
-        if (res.data.code === 200) {
-          this.abilityModel = res.data.data
+        if (res.data) {
+          this.abilityModel = res.data
           this.$nextTick(() => {
             this.initRadarChart()
           })
         }
-      })
+      }).catch(() => {})
     },
     initRadarChart() {
       const chartDom = document.getElementById('radarChart')
@@ -315,11 +315,22 @@ export default {
 <style scoped>
 .ability {
   padding: 20px;
+  animation: fadeInUp 0.4s ease;
 }
 
+/* 现代化主题 - 支持浅色/深色 */
 .ability-card {
   max-width: 1200px;
   margin: 0 auto;
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
 }
 
 .header {
@@ -331,12 +342,12 @@ export default {
 .title {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .title i {
   margin-right: 8px;
-  color: #409EFF;
+  color: var(--lc-primary);
 }
 
 /* 综合评分 */
@@ -358,23 +369,23 @@ export default {
 .score-value {
   font-size: 32px;
   font-weight: bold;
-  color: #303133;
+  color: var(--lc-primary);
   line-height: 1;
 }
 
 .score-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--lc-text-muted);
   margin-top: 8px;
 }
 
 .score-info h3 {
   margin-bottom: 15px;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .level-desc {
-  color: #606266;
+  color: var(--lc-text-secondary);
   line-height: 1.8;
   margin-bottom: 15px;
 }
@@ -383,9 +394,9 @@ export default {
   display: inline-flex;
   align-items: center;
   padding: 8px 16px;
-  background: #f0f9ff;
-  border-radius: 4px;
-  color: #409EFF;
+  background: var(--lc-primary-bg);
+  border-radius: var(--lc-radius);
+  color: var(--lc-primary);
   font-size: 14px;
 }
 
@@ -400,11 +411,11 @@ export default {
 
 .section-title {
   margin-bottom: 30px;
-  color: #303133;
+  color: var(--lc-text-primary);
   font-size: 18px;
   font-weight: 600;
   padding-left: 12px;
-  border-left: 4px solid #409EFF;
+  border-left: 4px solid var(--lc-primary);
 }
 
 /* 能力详情 */
@@ -413,23 +424,24 @@ export default {
 }
 
 .ability-item {
-  background: #f9fafc;
+  background: var(--lc-bg-tertiary);
   padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  border-radius: var(--lc-radius-xl);
+  margin-bottom: 16px;
   position: relative;
+  border: 1px solid var(--lc-border);
 }
 
 .ability-label {
   font-size: 14px;
-  color: #606266;
+  color: var(--lc-text-primary);
   margin-bottom: 12px;
   font-weight: 500;
 }
 
 .ability-label i {
   margin-right: 8px;
-  color: #409EFF;
+  color: var(--lc-primary);
 }
 
 .ability-value {
@@ -438,11 +450,44 @@ export default {
   top: 20px;
   font-size: 18px;
   font-weight: bold;
-  color: #409EFF;
+  color: var(--lc-primary);
+}
+
+/deep/ .el-progress-bar__outer {
+  background: var(--lc-bg-tertiary);
+}
+
+/deep/ .el-progress-bar__inner {
+  background: var(--lc-gradient-primary);
 }
 
 /* 建议 */
 .suggestions {
   padding: 20px 0;
+}
+
+/deep/ .el-alert {
+  background: var(--lc-bg-tertiary);
+  border: 1px solid var(--lc-border);
+}
+
+/deep/ .el-alert__title {
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-alert__description {
+  color: var(--lc-text-secondary);
+}
+
+/deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

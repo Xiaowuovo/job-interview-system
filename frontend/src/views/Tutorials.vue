@@ -108,11 +108,11 @@ export default {
   methods: {
     loadTutorials() {
       this.$http.get('/tutorials').then(res => {
-        if (res.data.code === 200) {
-          this.tutorials = res.data.data
-          this.allTutorials = res.data.data
+        if (res.data) {
+          this.tutorials = res.data
+          this.allTutorials = res.data
         }
-      })
+      }).catch(() => {})
     },
     handleSearch() {
       if (!this.searchKeyword || this.searchKeyword.trim() === '') {
@@ -124,8 +124,8 @@ export default {
       // 调用后端搜索接口
       this.$http.get(`/tutorials/search?keyword=${encodeURIComponent(this.searchKeyword)}`)
         .then(res => {
-          if (res.data.code === 200) {
-            this.tutorials = res.data.data
+          if (res.data) {
+            this.tutorials = res.data
           }
         })
         .catch(() => {
@@ -142,22 +142,22 @@ export default {
       this.dialogVisible = true
     },
     submitTutorial() {
-      this.$http.post('/tutorials', this.form).then(res => {
-        if (res.data.code === 200) {
-          this.$message.success('添加成功')
-          this.dialogVisible = false
-          this.loadTutorials()
-          this.form = { title: '', category: '', content: '', createdBy: this.form.createdBy }
-        }
-      })
+      this.$http.post('/tutorials', this.form).then(() => {
+        this.$message.success('添加成功')
+        this.dialogVisible = false
+        this.loadTutorials()
+        this.form = { title: '', category: '', content: '', createdBy: this.form.createdBy }
+      }).catch(() => {})
     }
   }
 }
 </script>
 
 <style scoped>
+/* 现代化 Tutorials 页面 - 支持浅色/深色主题 */
 .tutorials {
-  padding: 20px;
+  padding: 0;
+  animation: fadeInUp 0.4s ease;
 }
 
 .header {
@@ -172,24 +172,56 @@ export default {
   align-items: center;
 }
 
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-card__header {
+  border-bottom: 1px solid var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-tabs__item {
+  color: var(--lc-text-secondary);
+}
+
+/deep/ .el-tabs__item.is-active {
+  color: var(--lc-primary);
+}
+
+/deep/ .el-tabs__active-bar {
+  background: var(--lc-primary);
+}
+
 .tutorial-card {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--lc-transition);
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
 }
 
 .tutorial-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-4px);
+  border-color: var(--lc-primary) !important;
+  box-shadow: var(--lc-shadow-lg);
 }
 
 .tutorial-card h3 {
   margin: 0 0 10px 0;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .tutorial-preview {
-  color: #606266;
+  color: var(--lc-text-secondary);
   line-height: 1.6;
   margin: 10px 0;
 }
@@ -202,7 +234,54 @@ export default {
 }
 
 .tutorial-meta span {
-  color: #909399;
+  color: var(--lc-text-muted);
   font-size: 14px;
+}
+
+/deep/ .el-tag {
+  background: var(--lc-primary-bg);
+  border-color: transparent;
+  color: var(--lc-primary);
+}
+
+/deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+}
+
+/deep/ .el-dialog {
+  background: var(--lc-bg-card);
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-dialog__header {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-dialog__title {
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-form-item__label {
+  color: var(--lc-text-secondary);
+}
+
+/deep/ .el-textarea__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-select .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

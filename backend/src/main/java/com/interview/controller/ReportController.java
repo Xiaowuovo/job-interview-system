@@ -3,7 +3,7 @@ package com.interview.controller;
 import com.interview.common.Result;
 import com.interview.entity.*;
 import com.interview.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -16,30 +16,17 @@ import java.util.stream.Collectors;
  * 学习报告控制器
  */
 @RestController
-@RequestMapping("/api/reports")
-@CrossOrigin(origins = "*")
+@RequestMapping("/reports")
+@RequiredArgsConstructor
 public class ReportController {
 
-    @Autowired
-    private StudyRecordRepository studyRecordRepository;
-
-    @Autowired
-    private AnswerRecordRepository answerRecordRepository;
-
-    @Autowired
-    private TestRecordRepository testRecordRepository;
-
-    @Autowired
-    private InterviewSessionRepository interviewRepository;
-
-    @Autowired
-    private WrongQuestionBookRepository wrongQuestionRepository;
-
-    @Autowired
-    private UserAbilityModelRepository abilityModelRepository;
-
-    @Autowired
-    private QuestionRepository questionRepository;
+    private final StudyRecordRepository studyRecordRepository;
+    private final AnswerRecordRepository answerRecordRepository;
+    private final TestRecordRepository testRecordRepository;
+    private final InterviewSessionRepository interviewRepository;
+    private final WrongQuestionBookRepository wrongQuestionRepository;
+    private final UserAbilityModelRepository abilityModelRepository;
+    private final QuestionRepository questionRepository;
 
     /**
      * 生成学习报告
@@ -149,7 +136,8 @@ public class ReportController {
 
         long interviewCount = interviews.size();
         double avgInterviewScore = interviews.stream()
-                .filter(i -> "COMPLETED".equals(i.getStatus()))
+                .filter(i -> InterviewSession.Status.COMPLETED.equals(i.getStatus()))
+                .filter(i -> i.getAvgScore() != null)
                 .mapToDouble(InterviewSession::getAvgScore)
                 .average()
                 .orElse(0);

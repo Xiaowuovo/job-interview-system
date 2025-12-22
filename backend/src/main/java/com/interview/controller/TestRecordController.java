@@ -3,7 +3,7 @@ package com.interview.controller;
 import com.interview.common.Result;
 import com.interview.entity.TestRecord;
 import com.interview.service.TestRecordService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,12 +13,11 @@ import java.util.Map;
  * 测试记录控制器 - 优化版
  */
 @RestController
-@RequestMapping("/api/test-records")
-@CrossOrigin(origins = "*")
+@RequestMapping("/test-records")
+@RequiredArgsConstructor
 public class TestRecordController {
 
-    @Autowired
-    private TestRecordService testRecordService;
+    private final TestRecordService testRecordService;
 
     /**
      * 获取用户的所有测试记录
@@ -43,8 +42,12 @@ public class TestRecordController {
      */
     @PostMapping
     public Result<TestRecord> submitTestRecord(@RequestBody TestRecord record) {
+        // 兼容前端发送的 correctCount 字段
+        if (record.getCorrectAnswers() == null && record.getCorrectCount() != null) {
+            record.setCorrectAnswers(record.getCorrectCount());
+        }
         // 自动计算分数
-        if (record.getTotalQuestions() > 0) {
+        if (record.getTotalQuestions() != null && record.getTotalQuestions() > 0 && record.getCorrectAnswers() != null) {
             double score = (double) record.getCorrectAnswers() / record.getTotalQuestions() * 100;
             record.setScore(score);
         }

@@ -22,6 +22,9 @@ public class TestRecord {
 
     @Column(name = "correct_count")
     private Integer correctCount;
+    
+    @Column(name = "correct_answers")
+    private Integer correctAnswers; // 正确答案数
 
     private Double score;
 

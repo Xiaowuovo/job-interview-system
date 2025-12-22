@@ -3,7 +3,7 @@ package com.interview.controller;
 import com.interview.common.Result;
 import com.interview.entity.WrongQuestionBook;
 import com.interview.service.WrongQuestionBookService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,12 +13,11 @@ import java.util.Map;
  * 错题本控制器
  */
 @RestController
-@RequestMapping("/api/wrong-questions")
-@CrossOrigin(origins = "*")
+@RequestMapping("/wrong-questions")
+@RequiredArgsConstructor
 public class WrongQuestionBookController {
 
-    @Autowired
-    private WrongQuestionBookService wrongQuestionBookService;
+    private final WrongQuestionBookService wrongQuestionBookService;
 
     /**
      * 添加错题

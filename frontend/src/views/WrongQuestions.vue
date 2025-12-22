@@ -269,8 +269,8 @@ export default {
       }
 
       this.$http.get(url).then(res => {
-        if (res.data.code === 200) {
-          let questions = res.data.data
+        if (res.data) {
+          let questions = res.data
 
           // 如果是筛选已掌握，需要手动过滤
           if (this.filterStatus === 'mastered') {
@@ -303,8 +303,8 @@ export default {
     },
     loadStatistics() {
       this.$http.get(`/wrong-questions/statistics/${this.user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.statistics = res.data.data
+        if (res.data) {
+          this.statistics = res.data
         }
       })
     },
@@ -329,25 +329,21 @@ export default {
       }
 
       this.$http.post('/wrong-questions/notes', data).then(res => {
-        if (res.data.code === 200) {
-          this.$message.success('笔记保存成功')
-          this.notesDialogVisible = false
-          this.loadWrongQuestions()
-        }
-      })
+        this.$message.success('笔记保存成功')
+        this.notesDialogVisible = false
+        this.loadWrongQuestions()
+      }).catch(() => {})
     },
     markAsMastered(row) {
       this.$http.post('/wrong-questions/review', {
         userId: this.user.id,
         questionId: row.questionId,
         mastered: true
-      }).then(res => {
-        if (res.data.code === 200) {
-          this.$message.success('已标记为掌握')
-          this.loadWrongQuestions()
-          this.loadStatistics()
-        }
-      })
+      }).then(() => {
+        this.$message.success('已标记为掌握')
+        this.loadWrongQuestions()
+        this.loadStatistics()
+      }).catch(() => {})
     },
     removeFromBook(row) {
       this.$confirm('确定要从错题本中移除这道题吗？', '提示', {
@@ -356,13 +352,11 @@ export default {
         type: 'warning'
       }).then(() => {
         this.$http.delete(`/wrong-questions/remove?userId=${this.user.id}&questionId=${row.questionId}`)
-          .then(res => {
-            if (res.data.code === 200) {
-              this.$message.success('已移除')
-              this.loadWrongQuestions()
-              this.loadStatistics()
-            }
-          })
+          .then(() => {
+            this.$message.success('已移除')
+            this.loadWrongQuestions()
+            this.loadStatistics()
+          }).catch(() => {})
       }).catch(() => {})
     },
     clearMastered() {
@@ -378,12 +372,10 @@ export default {
       }).then(() => {
         this.$http.delete(`/wrong-questions/clear-mastered/${this.user.id}`)
           .then(res => {
-            if (res.data.code === 200) {
-              this.$message.success(`已清空 ${res.data.data} 道已掌握的错题`)
-              this.loadWrongQuestions()
-              this.loadStatistics()
-            }
-          })
+            this.$message.success(`已清空 ${res.data || 0} 道已掌握的错题`)
+            this.loadWrongQuestions()
+            this.loadStatistics()
+          }).catch(() => {})
       }).catch(() => {})
     },
     startReview() {
@@ -405,21 +397,19 @@ export default {
         userId: this.user.id,
         questionId: this.currentReviewQuestion.questionId,
         mastered: mastered
-      }).then(res => {
-        if (res.data.code === 200) {
-          // 下一题
-          if (this.currentReviewIndex < this.reviewList.length - 1) {
-            this.currentReviewIndex++
-            this.currentReviewQuestion = this.reviewList[this.currentReviewIndex]
-          } else {
-            // 复习完成
-            this.$message.success('复习完成！')
-            this.reviewDialogVisible = false
-            this.loadWrongQuestions()
-            this.loadStatistics()
-          }
+      }).then(() => {
+        // 下一题
+        if (this.currentReviewIndex < this.reviewList.length - 1) {
+          this.currentReviewIndex++
+          this.currentReviewQuestion = this.reviewList[this.currentReviewIndex]
+        } else {
+          // 复习完成
+          this.$message.success('复习完成！')
+          this.reviewDialogVisible = false
+          this.loadWrongQuestions()
+          this.loadStatistics()
         }
-      })
+      }).catch(() => {})
     },
     handleReviewClose() {
       this.$confirm('确定要结束复习吗？', '提示', {
@@ -446,8 +436,16 @@ export default {
 </script>
 
 <style scoped>
+/* 现代化 WrongQuestions 页面 - 支持浅色/深色主题 */
 .wrong-questions-container {
-  padding: 20px;
+  padding: 0;
+  animation: fadeInUp 0.4s ease;
+}
+
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
 }
 
 /* 统计卡片 */
@@ -457,12 +455,13 @@ export default {
 
 .stat-card {
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--lc-transition);
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  border-color: var(--lc-primary) !important;
+  box-shadow: var(--lc-shadow-lg);
 }
 
 .stat-content {
@@ -483,19 +482,55 @@ export default {
 .stat-value {
   font-size: 32px;
   font-weight: bold;
-  color: #303133;
+  color: var(--lc-text-primary);
   line-height: 1;
   margin-bottom: 8px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--lc-text-muted);
 }
 
 /* 筛选卡片 */
 .filter-card {
   margin-bottom: 20px;
+}
+
+/deep/ .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-select .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/* 表格样式 */
+/deep/ .el-table {
+  background: transparent !important;
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-table tr {
+  background: transparent !important;
+}
+
+/deep/ .el-table th {
+  background: var(--lc-bg-tertiary) !important;
+  color: var(--lc-text-secondary);
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-table td {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background: var(--lc-bg-hover) !important;
 }
 
 /* 题目列表 */
@@ -506,7 +541,7 @@ export default {
 .empty-state {
   text-align: center;
   padding: 80px 0;
-  color: #909399;
+  color: var(--lc-text-muted);
 }
 
 .empty-state p {
@@ -517,19 +552,19 @@ export default {
 /* 展开内容 */
 .expand-content {
   padding: 20px 50px;
-  background: #f9fafc;
+  background: var(--lc-bg-primary);
 }
 
 .question-detail h4,
 .notes-section h4 {
   margin-bottom: 10px;
-  color: #303133;
+  color: var(--lc-text-primary);
   font-size: 16px;
 }
 
 .question-detail p,
 .notes-section p {
-  color: #606266;
+  color: var(--lc-text-secondary);
   line-height: 1.8;
   margin-bottom: 15px;
 }
@@ -538,28 +573,87 @@ export default {
   text-align: right;
 }
 
-/* 复习内容 */
+/* 标签样式 */
+/deep/ .el-tag--success {
+  background: var(--lc-success-bg);
+  border-color: transparent;
+  color: var(--lc-success);
+}
+
+/deep/ .el-tag--warning {
+  background: var(--lc-warning-bg);
+  border-color: transparent;
+  color: var(--lc-warning);
+}
+
+/deep/ .el-tag--danger {
+  background: var(--lc-danger-bg);
+  border-color: transparent;
+  color: var(--lc-danger);
+}
+
+/* 按钮样式 */
+/deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+}
+
+/deep/ .el-button--success {
+  background: var(--lc-success-bg);
+  border: 1px solid var(--lc-success);
+  color: var(--lc-success);
+}
+
+/deep/ .el-button--danger {
+  background: var(--lc-danger-bg);
+  border: 1px solid var(--lc-danger);
+  color: var(--lc-danger);
+}
+
+/* 复习对话框 */
+/deep/ .el-dialog {
+  background: var(--lc-bg-card);
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-dialog__header {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-dialog__title {
+  color: var(--lc-text-primary);
+}
+
 .review-content {
   padding: 20px;
 }
 
 .question-info h3 {
   margin-bottom: 20px;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .question-text {
   font-size: 16px;
   line-height: 1.8;
-  color: #606266;
+  color: var(--lc-text-secondary);
   padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  background: var(--lc-bg-tertiary);
+  border-radius: var(--lc-radius);
   min-height: 100px;
+  border: 1px solid var(--lc-border);
 }
 
 .review-actions {
   text-align: center;
   padding: 20px 0;
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

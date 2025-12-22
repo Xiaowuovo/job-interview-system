@@ -4,14 +4,18 @@ import com.interview.common.Result;
 import com.interview.entity.Question;
 import com.interview.service.QuestionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/questions")
 @RequiredArgsConstructor
+@Validated
 public class QuestionController {
 
     private final QuestionService questionService;
@@ -82,11 +86,7 @@ public class QuestionController {
 
     @PutMapping("/{id}")
     public Result<Question> updateQuestion(@PathVariable Long id, @RequestBody Question question) {
-        try {
-            return Result.success(questionService.updateQuestion(id, question));
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
+        return Result.success(questionService.updateQuestion(id, question));
     }
 
     @DeleteMapping("/{id}")

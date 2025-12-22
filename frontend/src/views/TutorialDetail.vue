@@ -35,10 +35,10 @@ export default {
     loadTutorial() {
       const id = this.$route.params.id
       this.$http.get(`/tutorials/${id}`).then(res => {
-        if (res.data.code === 200) {
-          this.tutorial = res.data.data
+        if (res.data) {
+          this.tutorial = res.data
         }
-      })
+      }).catch(() => {})
     },
     formatContent(content) {
       return content.replace(/\n/g, '<br>')

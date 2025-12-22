@@ -4,7 +4,7 @@ import com.interview.common.Result;
 import com.interview.entity.KnowledgePoint;
 import com.interview.entity.StudyRecord;
 import com.interview.service.KnowledgeService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,12 +14,11 @@ import java.util.Map;
  * 知识点控制器
  */
 @RestController
-@RequestMapping("/api/knowledge")
-@CrossOrigin(origins = "*")
+@RequestMapping("/knowledge")
+@RequiredArgsConstructor
 public class KnowledgeController {
 
-    @Autowired
-    private KnowledgeService knowledgeService;
+    private final KnowledgeService knowledgeService;
 
     /**
      * 获取所有知识点

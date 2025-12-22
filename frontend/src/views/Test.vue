@@ -125,24 +125,30 @@ export default {
           count: this.questionCount
         }
       }).then(res => {
-        if (res.data.code === 200) {
-          this.questions = res.data.data
-          this.answers = new Array(this.questions.length).fill('')
-          this.started = true
-          this.startTime = Date.now()
-          this.timeLeft = this.questionCount * 60
-          this.startTimer()
-          this.loadFavorites()
+        // 响应拦截器已经返回response.data，所以直接用res
+        if (!res.data || res.data.length === 0) {
+          this.$message.warning('暂无题目，请联系管理员添加题目')
+          return
         }
+        this.questions = res.data
+        this.answers = new Array(this.questions.length).fill('')
+        this.started = true
+        this.startTime = Date.now()
+        this.timeLeft = this.questionCount * 60
+        this.startTimer()
+        this.loadFavorites()
+      }).catch(err => {
+        console.error('获取题目失败:', err)
+        this.$message.error('获取题目失败，请稍后重试')
       })
     },
     loadFavorites() {
       const user = JSON.parse(localStorage.getItem('user'))
       this.$http.get(`/favorites/user/${user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.favoriteIds = new Set(res.data.data.map(f => f.questionId))
+        if (res.data) {
+          this.favoriteIds = new Set(res.data.map(f => f.questionId))
         }
-      })
+      }).catch(() => {})
     },
     isFavorited(questionId) {
       return this.favoriteIds.has(questionId)
@@ -153,24 +159,20 @@ export default {
       if (this.isFavorited(question.id)) {
         // 取消收藏
         this.$http.delete(`/favorites/remove?userId=${user.id}&questionId=${question.id}`)
-          .then(res => {
-            if (res.data.code === 200) {
-              this.favoriteIds.delete(question.id)
-              this.$message.success('已取消收藏')
-            }
-          })
+          .then(() => {
+            this.favoriteIds.delete(question.id)
+            this.$message.success('已取消收藏')
+          }).catch(() => {})
       } else {
         // 添加收藏
         this.$http.post('/favorites/add', {
           userId: user.id,
           questionId: question.id,
           notes: ''
-        }).then(res => {
-          if (res.data.code === 200) {
-            this.favoriteIds.add(question.id)
-            this.$message.success('收藏成功')
-          }
-        })
+        }).then(() => {
+          this.favoriteIds.add(question.id)
+          this.$message.success('收藏成功')
+        }).catch(() => {})
       }
     },
     startTimer() {
@@ -200,9 +202,14 @@ export default {
       clearInterval(this.timer)
 
       let correctCount = 0
+      const wrongQuestionIds = []
+      
       this.questions.forEach((q, index) => {
         if (this.answers[index] === q.correctAnswer) {
           correctCount++
+        } else {
+          // 记录错题
+          wrongQuestionIds.push(q.id)
         }
       })
 
@@ -218,9 +225,36 @@ export default {
         timeSpent: timeSpent
       }
 
+      // 保存测试记录
       this.$http.post('/test-records', record).then(() => {
         this.finished = true
+        
+        // 发送测试完成事件，通知其他组件刷新数据
+        this.$bus.$emit(this.$events.TEST_COMPLETED, {
+          score: this.score,
+          correctCount,
+          totalQuestions: this.questions.length,
+          category: this.category
+        })
+        
+        // 保存错题到错题本
+        if (wrongQuestionIds.length > 0) {
+          this.saveWrongQuestions(user.id, wrongQuestionIds)
+        }
       })
+    },
+    saveWrongQuestions(userId, questionIds) {
+      // 批量添加错题
+      questionIds.forEach(questionId => {
+        this.$http.post('/wrong-questions/add', {
+          userId: userId,
+          questionId: questionId,
+          wrongAnswer: this.answers[this.questions.findIndex(q => q.id === questionId)] || '未作答'
+        }).catch(() => {})
+      })
+      
+      // 发送错题变化事件
+      this.$bus.$emit(this.$events.WRONG_QUESTION_CHANGED)
     },
     viewAnswers() {
       this.showAnswers = !this.showAnswers
@@ -230,18 +264,51 @@ export default {
 </script>
 
 <style scoped>
+/* 现代化 Test 页面 - 支持浅色/深色主题 */
 .test {
-  padding: 20px;
+  padding: 0;
   max-width: 900px;
   margin: 0 auto;
+  animation: fadeInUp 0.4s ease;
+}
+
+/* 卡片样式 */
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-card h2 {
+  color: var(--lc-text-primary);
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+/deep/ .el-card p {
+  color: var(--lc-text-secondary);
 }
 
 .test-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20px;
-  font-size: 16px;
-  font-weight: bold;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: var(--lc-bg-tertiary);
+  border-radius: var(--lc-radius-lg);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lc-text-primary);
+}
+
+/* 进度条 */
+/deep/ .el-progress-bar__outer {
+  background: var(--lc-bg-tertiary);
+}
+
+/deep/ .el-progress-bar__inner {
+  background: var(--lc-gradient-primary);
 }
 
 .question {
@@ -252,50 +319,190 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .question-header h3 {
   flex: 1;
   margin: 0;
   line-height: 1.8;
+  color: var(--lc-text-primary);
+  font-size: 18px;
 }
 
+/* 选项样式 */
 .options {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
 }
 
-.options .el-radio {
+.options /deep/ .el-radio {
   margin: 0;
-  padding: 15px;
+  padding: 16px 20px;
+  background: var(--lc-bg-tertiary);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius-lg);
+  width: 100%;
+  transition: all var(--lc-transition);
+}
+
+.options /deep/ .el-radio:hover {
+  border-color: var(--lc-primary);
+  background: var(--lc-bg-hover);
+}
+
+.options /deep/ .el-radio.is-checked {
+  border-color: var(--lc-primary);
+  background: var(--lc-primary-bg);
+}
+
+.options /deep/ .el-radio__label {
+  color: var(--lc-text-primary);
+  font-size: 15px;
+}
+
+.options /deep/ .el-radio__input.is-checked .el-radio__inner {
+  background: var(--lc-primary);
+  border-color: var(--lc-primary);
 }
 
 .test-actions {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 30px;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.test-actions /deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+  padding: 12px 32px;
+  border-radius: var(--lc-radius-lg);
+}
+
+.test-actions /deep/ .el-button--success {
+  background: var(--lc-gradient-success);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 32px;
+  border-radius: var(--lc-radius-lg);
+}
+
+.test-actions /deep/ .el-button--default {
+  background: var(--lc-bg-tertiary);
+  border: 1px solid var(--lc-border);
+  color: var(--lc-text-primary);
+  padding: 12px 32px;
+  border-radius: var(--lc-radius-lg);
+}
+
+.test-actions /deep/ .el-button--default:hover {
+  border-color: var(--lc-primary);
+  color: var(--lc-primary);
+}
+
+/* 结果页面 */
+/deep/ .el-result__title {
+  color: var(--lc-text-primary) !important;
+}
+
+/deep/ .el-result__subtitle {
+  color: var(--lc-primary) !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
 }
 
 .result-detail {
-  margin-top: 30px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--lc-border);
+}
+
+.result-detail h3 {
+  color: var(--lc-text-primary);
+  margin-bottom: 20px;
 }
 
 .answer-item {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--lc-bg-tertiary);
+  border-radius: var(--lc-radius-lg);
+  border: 1px solid var(--lc-border);
 }
 
 .answer-item p {
   margin: 8px 0;
   line-height: 1.6;
+  color: var(--lc-text-primary);
+}
+
+.answer-item strong {
+  color: var(--lc-text-primary);
 }
 
 .explanation {
-  color: #909399;
-  padding: 10px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  color: var(--lc-text-secondary);
+  padding: 12px 16px;
+  background: var(--lc-bg-card);
+  border-radius: var(--lc-radius);
+  border-left: 3px solid var(--lc-primary);
+  margin-top: 12px;
+}
+
+/* 收藏按钮 */
+/deep/ .el-button--warning {
+  background: var(--lc-primary-bg);
+  border-color: var(--lc-primary);
+  color: var(--lc-primary);
+}
+
+/* 分割线 */
+/deep/ .el-divider {
+  background: var(--lc-border);
+}
+
+/* 标签 */
+/deep/ .el-tag--success {
+  background: var(--lc-success-bg);
+  border-color: transparent;
+  color: var(--lc-success);
+}
+
+/deep/ .el-tag--danger {
+  background: var(--lc-danger-bg);
+  border-color: transparent;
+  color: var(--lc-danger);
+}
+
+/* 输入框 */
+/deep/ .el-input-number {
+  background: var(--lc-bg-tertiary);
+}
+
+/deep/ .el-input-number .el-input__inner {
+  background: var(--lc-bg-tertiary);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-form-item__label {
+  color: var(--lc-text-secondary);
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

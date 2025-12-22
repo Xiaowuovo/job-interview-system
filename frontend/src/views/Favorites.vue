@@ -155,8 +155,8 @@ export default {
     loadFavorites() {
       this.loading = true
       this.$http.get(`/favorites/user/${this.user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.favorites = res.data.data
+        if (res.data) {
+          this.favorites = res.data
           // 加载每个收藏的题目详情
           this.loadQuestionDetails()
         }
@@ -167,10 +167,10 @@ export default {
     loadQuestionDetails() {
       this.favorites.forEach(favorite => {
         this.$http.get(`/questions/${favorite.questionId}`).then(res => {
-          if (res.data.code === 200) {
-            this.$set(favorite, 'question', res.data.data)
+          if (res.data) {
+            this.$set(favorite, 'question', res.data)
           }
-        })
+        }).catch(() => {})
       })
     },
     viewQuestion(questionId) {
@@ -187,13 +187,11 @@ export default {
         userId: this.user.id,
         questionId: this.currentEditingRow.questionId,
         notes: this.editingNotes
-      }).then(res => {
-        if (res.data.code === 200) {
-          this.$message.success('笔记保存成功')
-          this.notesDialogVisible = false
-          this.loadFavorites()
-        }
-      })
+      }).then(() => {
+        this.$message.success('笔记保存成功')
+        this.notesDialogVisible = false
+        this.loadFavorites()
+      }).catch(() => {})
     },
     removeFavorite(row) {
       this.$confirm('确定要取消收藏这道题吗？', '提示', {
@@ -202,12 +200,10 @@ export default {
         type: 'warning'
       }).then(() => {
         this.$http.delete(`/favorites/remove?userId=${this.user.id}&questionId=${row.questionId}`)
-          .then(res => {
-            if (res.data.code === 200) {
-              this.$message.success('已取消收藏')
-              this.loadFavorites()
-            }
-          })
+          .then(() => {
+            this.$message.success('已取消收藏')
+            this.loadFavorites()
+          }).catch(() => {})
       }).catch(() => {})
     },
     clearAll() {
@@ -221,11 +217,9 @@ export default {
           userId: this.user.id,
           questionIds: questionIds
         }).then(res => {
-          if (res.data.code === 200) {
-            this.$message.success(`已清空 ${res.data.data} 个收藏`)
-            this.loadFavorites()
-          }
-        })
+          this.$message.success(`已清空 ${res.data || questionIds.length} 个收藏`)
+          this.loadFavorites()
+        }).catch(() => {})
       }).catch(() => {})
     },
     getDifficultyType(difficulty) {
@@ -254,18 +248,30 @@ export default {
 </script>
 
 <style scoped>
+/* 现代化 Favorites 页面 - 支持浅色/深色主题 */
 .favorites-container {
-  padding: 20px;
+  padding: 0;
+  animation: fadeInUp 0.4s ease;
+}
+
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-card__header {
+  border-bottom: 1px solid var(--lc-border);
 }
 
 .card-title {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .card-title i {
-  color: #F56C6C;
+  color: var(--lc-primary);
   margin-right: 8px;
 }
 
@@ -273,7 +279,7 @@ export default {
 .empty-state {
   text-align: center;
   padding: 80px 0;
-  color: #909399;
+  color: var(--lc-text-muted);
 }
 
 .empty-state p {
@@ -281,34 +287,58 @@ export default {
   font-size: 16px;
 }
 
+/* 表格样式 */
+/deep/ .el-table {
+  background: transparent !important;
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-table tr {
+  background: transparent !important;
+}
+
+/deep/ .el-table th {
+  background: var(--lc-bg-tertiary) !important;
+  color: var(--lc-text-secondary);
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-table td {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background: var(--lc-bg-hover) !important;
+}
+
 /* 题目标题 */
 .question-title {
   cursor: pointer;
-  color: #409EFF;
-  transition: color 0.2s;
+  color: var(--lc-primary);
+  transition: color var(--lc-transition);
 }
 
 .question-title:hover {
-  color: #66B1FF;
+  color: var(--lc-primary-light);
   text-decoration: underline;
 }
 
 /* 展开内容 */
 .expand-content {
   padding: 20px 50px;
-  background: #f9fafc;
+  background: var(--lc-bg-primary);
 }
 
 .question-detail h4,
 .notes-section h4 {
   margin-bottom: 10px;
-  color: #303133;
+  color: var(--lc-text-primary);
   font-size: 16px;
 }
 
 .question-detail p,
 .notes-section p {
-  color: #606266;
+  color: var(--lc-text-secondary);
   line-height: 1.8;
   margin-bottom: 15px;
 }
@@ -316,9 +346,73 @@ export default {
 .options p {
   margin: 8px 0;
   padding-left: 10px;
+  color: var(--lc-text-secondary);
 }
 
 .action-buttons {
   text-align: right;
+}
+
+/* 标签样式 */
+/deep/ .el-tag--success {
+  background: var(--lc-success-bg);
+  border-color: transparent;
+  color: var(--lc-success);
+}
+
+/deep/ .el-tag--warning {
+  background: var(--lc-warning-bg);
+  border-color: transparent;
+  color: var(--lc-warning);
+}
+
+/deep/ .el-tag--danger {
+  background: var(--lc-danger-bg);
+  border-color: transparent;
+  color: var(--lc-danger);
+}
+
+/* 按钮样式 */
+/deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+}
+
+/deep/ .el-button--danger {
+  background: var(--lc-danger-bg);
+  border: 1px solid var(--lc-danger);
+  color: var(--lc-danger);
+}
+
+/deep/ .el-button--text {
+  color: var(--lc-primary);
+}
+
+/* 对话框 */
+/deep/ .el-dialog {
+  background: var(--lc-bg-card);
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-dialog__header {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-dialog__title {
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-textarea__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

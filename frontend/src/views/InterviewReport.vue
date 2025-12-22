@@ -197,8 +197,8 @@ export default {
     loadReport() {
       this.loading = true
       this.$http.get(`/interview/session/${this.sessionId}`).then(res => {
-        if (res.data.code === 200) {
-          this.session = res.data.data
+        if (res.data) {
+          this.session = res.data
           this.parseConversation()
           this.generateFeedback()
         }

@@ -162,25 +162,25 @@ export default {
       }
 
       this.$http.get(url).then(res => {
-        if (res.data.code === 200) {
-          this.knowledgePoints = res.data.data
+        if (res.data) {
+          this.knowledgePoints = res.data
         }
-      })
+      }).catch(() => {})
     },
     loadStudyRecords() {
       this.$http.get(`/knowledge/study/user/${this.user.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.studyRecords = res.data.data
+        if (res.data) {
+          this.studyRecords = res.data
         }
-      })
+      }).catch(() => {})
     },
     searchKnowledge() {
       if (this.searchKeyword) {
         this.$http.get(`/knowledge/search?keyword=${this.searchKeyword}`).then(res => {
-          if (res.data.code === 200) {
-            this.knowledgePoints = res.data.data
+          if (res.data) {
+            this.knowledgePoints = res.data
           }
-        })
+        }).catch(() => {})
       } else {
         this.loadKnowledgePoints()
       }
@@ -194,8 +194,8 @@ export default {
 
       // 加载该知识点的学习记录
       this.$http.get(`/knowledge/study/${this.user.id}/${kp.id}`).then(res => {
-        if (res.data.code === 200) {
-          this.studyProgress = res.data.data.progress
+        if (res.data) {
+          this.studyProgress = res.data.progress
         } else {
           this.studyProgress = 0
         }
@@ -236,13 +236,11 @@ export default {
         studyTime: this.studyTime
       }
 
-      this.$http.post('/knowledge/study', data).then(res => {
-        if (res.data.code === 200) {
-          this.$message.success('学习记录已保存')
-          this.loadStudyRecords()
-          this.handleClose()
-        }
-      })
+      this.$http.post('/knowledge/study', data).then(() => {
+        this.$message.success('学习记录已保存')
+        this.loadStudyRecords()
+        this.handleClose()
+      }).catch(() => {})
     },
     getStudyProgress(kpId) {
       return this.studyRecords.find(r => r.knowledgePointId === kpId)
@@ -276,22 +274,49 @@ export default {
 </script>
 
 <style scoped>
+/* 现代化 Knowledge 页面 - 支持浅色/深色主题 */
 .knowledge-container {
-  padding: 20px;
+  padding: 0;
+  animation: fadeInUp 0.4s ease;
 }
 
 .search-card {
   margin-bottom: 20px;
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-card {
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-select .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
+  color: var(--lc-text-primary);
 }
 
 .knowledge-card {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--lc-transition);
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
 }
 
 .knowledge-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
+  border-color: var(--lc-primary) !important;
+  box-shadow: var(--lc-shadow-lg);
 }
 
 .card-header {
@@ -304,7 +329,7 @@ export default {
 .card-header h3 {
   margin: 0;
   font-size: 16px;
-  color: #303133;
+  color: var(--lc-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -313,18 +338,18 @@ export default {
 }
 
 .card-content {
-  color: #606266;
+  color: var(--lc-text-secondary);
 }
 
 .category {
   margin-bottom: 10px;
   font-size: 14px;
-  color: #909399;
+  color: var(--lc-text-muted);
 }
 
 .stats {
   font-size: 13px;
-  color: #909399;
+  color: var(--lc-text-muted);
   margin-bottom: 15px;
 }
 
@@ -332,14 +357,58 @@ export default {
   margin-top: 10px;
 }
 
+/deep/ .el-progress-bar__outer {
+  background: var(--lc-bg-tertiary);
+}
+
+/deep/ .el-progress-bar__inner {
+  background: var(--lc-gradient-primary);
+}
+
+/* 标签样式 */
+/deep/ .el-tag--success {
+  background: var(--lc-success-bg);
+  border-color: transparent;
+  color: var(--lc-success);
+}
+
+/deep/ .el-tag--warning {
+  background: var(--lc-warning-bg);
+  border-color: transparent;
+  color: var(--lc-warning);
+}
+
+/deep/ .el-tag--danger {
+  background: var(--lc-danger-bg);
+  border-color: transparent;
+  color: var(--lc-danger);
+}
+
 /* 详情对话框样式 */
+/deep/ .el-dialog {
+  background: var(--lc-bg-card);
+  border-radius: var(--lc-radius-xl);
+}
+
+/deep/ .el-dialog__header {
+  border-bottom: 1px solid var(--lc-border);
+}
+
+/deep/ .el-dialog__title {
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-dialog__body {
+  color: var(--lc-text-primary);
+}
+
 .detail-content {
   padding: 20px;
 }
 
 .detail-header h2 {
   margin: 0 0 10px 0;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .meta-info {
@@ -351,16 +420,16 @@ export default {
 .category-tag,
 .importance-tag {
   padding: 4px 12px;
-  background: #f0f2f5;
-  border-radius: 4px;
+  background: var(--lc-bg-tertiary);
+  border-radius: var(--lc-radius);
   font-size: 13px;
-  color: #606266;
+  color: var(--lc-text-secondary);
 }
 
 .markdown-content {
   padding: 20px 0;
   line-height: 1.8;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .markdown-content >>> h1,
@@ -368,23 +437,24 @@ export default {
 .markdown-content >>> h3 {
   margin-top: 20px;
   margin-bottom: 15px;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .markdown-content >>> code {
-  background: #f5f7fa;
+  background: var(--lc-bg-tertiary);
   padding: 2px 6px;
-  border-radius: 3px;
-  color: #e83e8c;
+  border-radius: 4px;
+  color: var(--lc-primary);
   font-size: 14px;
 }
 
 .markdown-content >>> pre {
-  background: #282c34;
-  color: #abb2bf;
-  padding: 15px;
-  border-radius: 5px;
+  background: var(--lc-bg-code);
+  color: var(--lc-text-primary);
+  padding: 16px;
+  border-radius: var(--lc-radius);
   overflow-x: auto;
+  border: 1px solid var(--lc-border);
 }
 
 .study-actions {
@@ -394,14 +464,52 @@ export default {
 .progress-section h4,
 .time-section h4 {
   margin-bottom: 15px;
-  color: #303133;
+  color: var(--lc-text-primary);
 }
 
 .time-display {
   font-size: 32px;
   font-weight: bold;
-  color: #409EFF;
+  color: var(--lc-primary);
   text-align: center;
   padding: 20px 0;
+}
+
+/* 按钮样式 */
+/deep/ .el-button--primary {
+  background: var(--lc-gradient-primary);
+  border: none;
+  color: var(--lc-text-inverse);
+  font-weight: 600;
+}
+
+/deep/ .el-button--default {
+  background: var(--lc-bg-tertiary);
+  border: 1px solid var(--lc-border);
+  color: var(--lc-text-primary);
+}
+
+/deep/ .el-slider__runway {
+  background: var(--lc-bg-tertiary);
+}
+
+/deep/ .el-slider__bar {
+  background: var(--lc-gradient-primary);
+}
+
+/deep/ .el-slider__button {
+  border-color: var(--lc-primary);
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

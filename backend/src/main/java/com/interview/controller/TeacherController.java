@@ -3,7 +3,7 @@ package com.interview.controller;
 import com.interview.common.Result;
 import com.interview.entity.TeacherProfile;
 import com.interview.service.TeacherService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,24 +12,19 @@ import java.util.List;
  * 教师控制器
  */
 @RestController
-@RequestMapping("/api/teacher")
-@CrossOrigin
+@RequestMapping("/teacher")
+@RequiredArgsConstructor
 public class TeacherController {
 
-    @Autowired
-    private TeacherService teacherService;
+    private final TeacherService teacherService;
 
     /**
      * 创建教师资料
      */
     @PostMapping("/profile")
     public Result<TeacherProfile> createProfile(@RequestParam Long userId, @RequestBody TeacherProfile profile) {
-        try {
-            TeacherProfile created = teacherService.createProfile(userId, profile);
-            return Result.success(created);
-        } catch (Exception e) {
-            return Result.error(500, e.getMessage());
-        }
+        TeacherProfile created = teacherService.createProfile(userId, profile);
+        return Result.success(created);
     }
 
     /**
@@ -37,12 +32,8 @@ public class TeacherController {
      */
     @PutMapping("/profile")
     public Result<TeacherProfile> updateProfile(@RequestParam Long userId, @RequestBody TeacherProfile profile) {
-        try {
-            TeacherProfile updated = teacherService.updateProfile(userId, profile);
-            return Result.success(updated);
-        } catch (Exception e) {
-            return Result.error(500, e.getMessage());
-        }
+        TeacherProfile updated = teacherService.updateProfile(userId, profile);
+        return Result.success(updated);
     }
 
     /**
@@ -50,12 +41,8 @@ public class TeacherController {
      */
     @GetMapping("/profile")
     public Result<TeacherProfile> getProfile(@RequestParam Long userId) {
-        try {
-            TeacherProfile profile = teacherService.getProfile(userId);
-            return Result.success(profile);
-        } catch (Exception e) {
-            return Result.error(404, e.getMessage());
-        }
+        TeacherProfile profile = teacherService.getProfile(userId);
+        return Result.success(profile);
     }
 
     /**
@@ -67,12 +54,8 @@ public class TeacherController {
         @RequestParam Boolean approved,
         @RequestParam(required = false) String comments
     ) {
-        try {
-            TeacherProfile profile = teacherService.verifyTeacher(profileId, approved, comments);
-            return Result.success(profile);
-        } catch (Exception e) {
-            return Result.error(500, e.getMessage());
-        }
+        TeacherProfile profile = teacherService.verifyTeacher(profileId, approved, comments);
+        return Result.success(profile);
     }
 
     /**
@@ -80,12 +63,8 @@ public class TeacherController {
      */
     @GetMapping("/pending-verifications")
     public Result<List<TeacherProfile>> getPendingVerifications() {
-        try {
-            List<TeacherProfile> profiles = teacherService.getPendingVerifications();
-            return Result.success(profiles);
-        } catch (Exception e) {
-            return Result.error(500, e.getMessage());
-        }
+        List<TeacherProfile> profiles = teacherService.getPendingVerifications();
+        return Result.success(profiles);
     }
 
     /**
@@ -93,12 +72,8 @@ public class TeacherController {
      */
     @GetMapping("/verified")
     public Result<List<TeacherProfile>> getVerifiedTeachers() {
-        try {
-            List<TeacherProfile> profiles = teacherService.getVerifiedTeachers();
-            return Result.success(profiles);
-        } catch (Exception e) {
-            return Result.error(500, e.getMessage());
-        }
+        List<TeacherProfile> profiles = teacherService.getVerifiedTeachers();
+        return Result.success(profiles);
     }
 
     /**
@@ -106,12 +81,8 @@ public class TeacherController {
      */
     @GetMapping("/top-rated")
     public Result<List<TeacherProfile>> getTopRatedTeachers() {
-        try {
-            List<TeacherProfile> profiles = teacherService.getTopRatedTeachers();
-            return Result.success(profiles);
-        } catch (Exception e) {
-            return Result.error(500, e.getMessage());
-        }
+        List<TeacherProfile> profiles = teacherService.getTopRatedTeachers();
+        return Result.success(profiles);
     }
 
     /**
@@ -119,11 +90,7 @@ public class TeacherController {
      */
     @GetMapping("/popular")
     public Result<List<TeacherProfile>> getPopularTeachers() {
-        try {
-            List<TeacherProfile> profiles = teacherService.getPopularTeachers();
-            return Result.success(profiles);
-        } catch (Exception e) {
-            return Result.error(500, e.getMessage());
-        }
+        List<TeacherProfile> profiles = teacherService.getPopularTeachers();
+        return Result.success(profiles);
     }
 }
