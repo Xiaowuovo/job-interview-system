@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 知识点服务
@@ -224,13 +225,13 @@ public class KnowledgeService {
         // 简单推荐策略: 推荐未学习的、重要度高的知识点
         List<Long> studiedIds = userRecords.stream()
                 .map(StudyRecord::getKnowledgePointId)
-                .toList();
+                .collect(Collectors.toList());
 
         // 获取所有知识点，过滤已学习的，按重要度排序
         return knowledgePointRepository.findAll().stream()
                 .filter(kp -> !studiedIds.contains(kp.getId()))
                 .sorted((a, b) -> Integer.compare(b.getImportance(), a.getImportance()))
                 .limit(limit)
-                .toList();
+                .collect(Collectors.toList());
     }
 }

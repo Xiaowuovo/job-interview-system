@@ -84,7 +84,7 @@ public class WrongQuestionBookService {
         Optional<WrongQuestionBook> wqOpt = wrongQuestionBookRepository
                 .findByUserIdAndQuestionId(userId, questionId);
 
-        if (wqOpt.isEmpty()) {
+        if (!wqOpt.isPresent()) {
             return null;
         }
 
@@ -117,7 +117,7 @@ public class WrongQuestionBookService {
         Optional<WrongQuestionBook> wqOpt = wrongQuestionBookRepository
                 .findByUserIdAndQuestionId(userId, questionId);
 
-        if (wqOpt.isEmpty()) {
+        if (!wqOpt.isPresent()) {
             return null;
         }
 

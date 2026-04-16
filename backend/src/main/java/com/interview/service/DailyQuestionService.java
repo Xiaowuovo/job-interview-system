@@ -36,7 +36,7 @@ public class DailyQuestionService {
         Optional<DailyQuestion> dailyOpt = dailyQuestionRepository.findByDate(today);
 
         DailyQuestion daily;
-        if (dailyOpt.isEmpty()) {
+        if (!dailyOpt.isPresent()) {
             // 今天还没有设置每日一题，自动生成
             daily = generateDailyQuestion(today);
         } else {

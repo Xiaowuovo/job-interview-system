@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 测试记录服务
@@ -133,7 +134,7 @@ public class TestRecordService {
         return testRecordRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .limit(limit)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     /**

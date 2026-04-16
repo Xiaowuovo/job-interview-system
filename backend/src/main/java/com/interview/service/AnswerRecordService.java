@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 答题记录服务
@@ -60,7 +61,7 @@ public class AnswerRecordService {
         return answerRecordRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .limit(limit)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     /**
@@ -151,7 +152,7 @@ public class AnswerRecordService {
     private void updateUserAbility(Long userId, AnswerRecord record) {
         Optional<UserAbilityModel> abilityOpt = abilityModelRepository.findByUserId(userId);
 
-        if (abilityOpt.isEmpty()) {
+        if (!abilityOpt.isPresent()) {
             return; // 能力模型不存在，跳过
         }
 
