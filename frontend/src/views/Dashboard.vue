@@ -241,6 +241,12 @@ export default {
     }
   },
   mounted() {
+    // 检查用户是否登录
+    if (!this.user || !this.user.id) {
+      console.warn('用户未登录，跳过数据加载')
+      return
+    }
+    
     this.loadData()
     this.loadPointsStats()
     this.initCharts()

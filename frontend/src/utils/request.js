@@ -65,6 +65,7 @@ service.interceptors.response.use(
     console.error('响应错误:', error)
     
     let message = '网络错误，请稍后重试'
+    let showMessage = true
     
     if (error.response) {
       switch (error.response.status) {
@@ -77,7 +78,12 @@ service.interceptors.response.use(
           router.push('/login')
           break
         case 403:
-          message = '拒绝访问'
+          message = '拒绝访问，权限不足'
+          // 如果用户未登录，不显示403错误（可能是路由跳转导致）
+          const userStr = localStorage.getItem('user')
+          if (!userStr) {
+            showMessage = false
+          }
           break
         case 404:
           message = '请求的资源不存在'
@@ -90,13 +96,17 @@ service.interceptors.response.use(
       }
     } else if (error.code === 'ECONNABORTED') {
       message = '请求超时，请稍后重试'
+    } else if (error.code === 'ERR_NETWORK') {
+      message = '无法连接到服务器，请检查后端是否启动'
     }
 
-    Message({
-      message: message,
-      type: 'error',
-      duration: 3000
-    })
+    if (showMessage) {
+      Message({
+        message: message,
+        type: 'error',
+        duration: 3000
+      })
+    }
 
     return Promise.reject(error)
   }
