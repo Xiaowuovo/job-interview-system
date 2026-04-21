@@ -1,6 +1,7 @@
 package com.interview.controller;
 
 import com.interview.common.Result;
+import com.interview.dto.ChangePasswordRequest;
 import com.interview.dto.LoginRequest;
 import com.interview.dto.RegisterRequest;
 import com.interview.dto.UserResponse;
@@ -59,5 +60,21 @@ public class UserController {
         return userService.getUserAbility(id)
                 .map(Result::success)
                 .orElse(Result.error("能力模型不存在"));
+    }
+
+    @PostMapping("/{id}/change-password")
+    public Result<String> changePassword(@PathVariable Long id, @RequestBody ChangePasswordRequest request) {
+        boolean success = userService.changePassword(id, request.getOldPassword(), request.getNewPassword());
+        if (success) {
+            return Result.success("密码修改成功");
+        }
+        return Result.error("旧密码错误");
+    }
+
+    @PostMapping("/{id}/settings")
+    public Result<String> saveSettings(@PathVariable Long id, @RequestBody java.util.Map<String, Object> settings) {
+        // 这里可以将设置保存到数据库或只返回成功
+        // 目前先返回成功，前端会保存到localStorage
+        return Result.success("设置保存成功");
     }
 }

@@ -14,6 +14,11 @@ const routes = [
     component: () => import('@/views/Login.vue')
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue')
+  },
+  {
     path: '/home',
     name: 'Home',
     component: () => import('@/views/Home.vue'),
@@ -87,6 +92,37 @@ const routes = [
         path: 'study-report',
         name: 'StudyReport',
         component: () => import('@/views/StudyReport.vue')
+      },
+      // 教师端路由
+      {
+        path: 'teacher/dashboard',
+        name: 'TeacherDashboard',
+        component: () => import('@/views/teacher/TeacherDashboard.vue'),
+        meta: { requiresTeacher: true }
+      },
+      {
+        path: 'teacher/questions',
+        name: 'TeacherQuestionManage',
+        component: () => import('@/views/teacher/QuestionManage.vue'),
+        meta: { requiresTeacher: true }
+      },
+      {
+        path: 'teacher/tutorials',
+        name: 'TeacherTutorialManage',
+        component: () => import('@/views/teacher/TutorialManage.vue'),
+        meta: { requiresTeacher: true }
+      },
+      {
+        path: 'teacher/courses',
+        name: 'TeacherCourseManage',
+        component: () => import('@/views/teacher/CourseManage.vue'),
+        meta: { requiresTeacher: true }
+      },
+      {
+        path: 'teacher/knowledge',
+        name: 'TeacherKnowledgeManage',
+        component: () => import('@/views/teacher/KnowledgeManage.vue'),
+        meta: { requiresTeacher: true }
       }
     ]
   }
@@ -99,8 +135,8 @@ const router = new VueRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  // 登录页面直接放行
-  if (to.path === '/login') {
+  // 登录和注册页面直接放行
+  if (to.path === '/login' || to.path === '/register') {
     next()
     return
   }
@@ -119,6 +155,12 @@ router.beforeEach((to, from, next) => {
       // 用户信息无效
       localStorage.removeItem('user')
       next('/login')
+      return
+    }
+    
+    // 检查教师权限
+    if (to.meta.requiresTeacher && user.role !== 'TEACHER') {
+      next('/home/dashboard')
       return
     }
   } catch (e) {

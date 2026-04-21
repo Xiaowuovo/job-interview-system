@@ -43,6 +43,17 @@ server:
     include-message: always
     include-binding-errors: always
 
+# 智谱AI配置
+# 免费注册地址: https://open.bigmodel.cn/
+# 注册后在"API密钥"页面获取您的API Key
+# GLM-4-Flash模型每天有100万tokens免费额度
+zhipu:
+  api:
+    key: af40b1f0c4074a41827f6f53e5a1597a.uWLtBtveaKk9jDZZ
+    # 如果未设置环境变量ZHIPU_API_KEY，将使用模拟AI回复模式
+    # 生产环境建议设置环境变量: export ZHIPU_API_KEY=your_api_key_here
+    # 或直接在此处填写: key: your_api_key_here
+
 # 日志配置
 logging:
   level:

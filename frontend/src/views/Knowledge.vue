@@ -32,7 +32,17 @@
       </el-row>
     </el-card>
 
-    <el-row :gutter="20" style="margin-top: 20px;">
+    <!-- 空状态提示 -->
+    <div v-if="knowledgePoints.length === 0" class="empty-state">
+      <i class="el-icon-document-delete" style="font-size: 80px; color: #DCDFE6;"></i>
+      <p>暂无知识点数据</p>
+      <el-button type="primary" size="small" @click="loadKnowledgePoints">
+        刷新
+      </el-button>
+    </div>
+
+    <!-- 知识点列表 -->
+    <el-row :gutter="20" style="margin-top: 20px;" v-else>
       <el-col :span="6" v-for="kp in knowledgePoints" :key="kp.id">
         <el-card class="knowledge-card" shadow="hover" @click.native="viewDetail(kp)">
           <div class="card-header">
@@ -49,11 +59,11 @@
             <p class="stats">
               <span>
                 <i class="el-icon-view"></i>
-                {{ kp.viewCount }}
+                {{ kp.viewCount || 0 }}
               </span>
               <span style="margin-left: 15px;">
                 <i class="el-icon-star-on"></i>
-                重要度: {{ kp.importance }}
+                重要度: {{ kp.importance || 1 }}
               </span>
             </p>
             <div class="progress-wrapper" v-if="getStudyProgress(kp.id)">
@@ -154,18 +164,35 @@ export default {
   methods: {
     loadKnowledgePoints() {
       let url = '/knowledge'
+      const params = []
 
+      // 使用查询参数进行筛选，而不是不同的URL
       if (this.searchCategory) {
-        url = `/knowledge/category/${this.searchCategory}`
+        url = `/knowledge/category/${encodeURIComponent(this.searchCategory)}`
       } else if (this.searchDifficulty) {
         url = `/knowledge/difficulty/${this.searchDifficulty}`
       }
 
       this.$http.get(url).then(res => {
         if (res.data) {
-          this.knowledgePoints = res.data
+          // 过滤掉空对象和无效数据
+          this.knowledgePoints = res.data.filter(kp => 
+            kp && kp.id && kp.title && kp.category
+          )
+          
+          // 应用难度筛选（如果同时选择了分类和难度）
+          if (this.searchCategory && this.searchDifficulty) {
+            this.knowledgePoints = this.knowledgePoints.filter(kp => 
+              kp.difficulty === this.searchDifficulty
+            )
+          }
+        } else {
+          this.knowledgePoints = []
         }
-      }).catch(() => {})
+      }).catch(err => {
+        console.error('加载知识点失败', err)
+        this.knowledgePoints = []
+      })
     },
     loadStudyRecords() {
       this.$http.get(`/knowledge/study/user/${this.user.id}`).then(res => {
@@ -175,12 +202,23 @@ export default {
       }).catch(() => {})
     },
     searchKnowledge() {
-      if (this.searchKeyword) {
-        this.$http.get(`/knowledge/search?keyword=${this.searchKeyword}`).then(res => {
-          if (res.data) {
-            this.knowledgePoints = res.data
+      if (this.searchKeyword && this.searchKeyword.trim()) {
+        const keyword = encodeURIComponent(this.searchKeyword.trim())
+        this.$http.get(`/knowledge/search?keyword=${keyword}`).then(res => {
+          if (res.data && res.data.length > 0) {
+            // 过滤掉空对象
+            this.knowledgePoints = res.data.filter(kp => 
+              kp && kp.id && kp.title && kp.category
+            )
+          } else {
+            this.knowledgePoints = []
+            this.$message.info('未找到相关知识点')
           }
-        }).catch(() => {})
+        }).catch(err => {
+          console.error('搜索失败', err)
+          this.knowledgePoints = []
+          this.$message.error('搜索失败，请重试')
+        })
       } else {
         this.loadKnowledgePoints()
       }
@@ -278,6 +316,17 @@ export default {
 .knowledge-container {
   padding: 0;
   animation: fadeInUp 0.4s ease;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 100px 0;
+  color: var(--lc-text-muted);
+}
+
+.empty-state p {
+  margin: 20px 0;
+  font-size: 16px;
 }
 
 .search-card {

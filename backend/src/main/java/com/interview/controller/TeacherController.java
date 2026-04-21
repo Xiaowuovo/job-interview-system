@@ -46,28 +46,6 @@ public class TeacherController {
     }
 
     /**
-     * 认证教师（管理员）
-     */
-    @PostMapping("/verify")
-    public Result<TeacherProfile> verifyTeacher(
-        @RequestParam Long profileId,
-        @RequestParam Boolean approved,
-        @RequestParam(required = false) String comments
-    ) {
-        TeacherProfile profile = teacherService.verifyTeacher(profileId, approved, comments);
-        return Result.success(profile);
-    }
-
-    /**
-     * 获取待认证教师列表（管理员）
-     */
-    @GetMapping("/pending-verifications")
-    public Result<List<TeacherProfile>> getPendingVerifications() {
-        List<TeacherProfile> profiles = teacherService.getPendingVerifications();
-        return Result.success(profiles);
-    }
-
-    /**
      * 获取认证教师列表
      */
     @GetMapping("/verified")

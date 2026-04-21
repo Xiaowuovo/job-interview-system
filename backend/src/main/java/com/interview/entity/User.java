@@ -58,9 +58,8 @@ public class User {
 
     // 枚举类型定义
     public enum Role {
-        STUDENT,
-        TEACHER,
-        ADMIN
+        STUDENT,  // 学生
+        TEACHER   // 教师
     }
 
     public enum MembershipType {

@@ -125,7 +125,7 @@
               <div class="action-icon" style="background: #fdf6ec; color: #E6A23C">
                 <i class="el-icon-microphone"></i>
               </div>
-              <span>模拟面试</span>
+              <span>AI模拟问答</span>
             </div>
             <div class="action-item" @click="$router.push('/home/knowledge')">
               <div class="action-icon" style="background: #f0f9ff; color: #409EFF">

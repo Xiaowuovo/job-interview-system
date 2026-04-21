@@ -3,33 +3,43 @@
     <el-card shadow="hover">
       <div slot="header" class="clearfix">
         <span class="card-title">
-          <i class="el-icon-star-on"></i> 我的收藏（{{ favorites.length }}）
+          <i class="el-icon-star-on"></i> 我的收藏（{{ filteredFavorites.length }}）
         </span>
-        <el-button
-          style="float: right;"
-          type="danger"
-          size="small"
-          @click="clearAll"
-          v-if="favorites.length > 0">
-          清空收藏
-        </el-button>
+        <div style="float: right;">
+          <el-radio-group v-model="filterType" size="small" @change="loadFavorites" style="margin-right: 10px;">
+            <el-radio-button label="all">全部</el-radio-button>
+            <el-radio-button label="question">题目</el-radio-button>
+            <el-radio-button label="wrong">错题</el-radio-button>
+            <el-radio-button label="tutorial">教程</el-radio-button>
+            <el-radio-button label="knowledge">知识</el-radio-button>
+          </el-radio-group>
+          <el-button
+            type="danger"
+            size="small"
+            @click="clearAll"
+            v-if="filteredFavorites.length > 0">
+            清空收藏
+          </el-button>
+        </div>
       </div>
 
       <!-- 空状态 -->
-      <div v-if="favorites.length === 0" class="empty-state">
+      <div v-if="filteredFavorites.length === 0" class="empty-state">
         <i class="el-icon-star-off" style="font-size: 80px; color: #DCDFE6;"></i>
-        <p>还没有收藏任何题目</p>
-        <el-button type="primary" @click="$router.push('/home/practice')">
-          去刷题
+        <p>还没有收藏内容</p>
+        <el-button type="primary" @click="$router.push('/home/dashboard')">
+          去浏览
         </el-button>
       </div>
 
       <!-- 收藏列表 -->
       <el-table
         v-else
-        :data="favorites"
+        :data="filteredFavorites"
         style="width: 100%"
-        v-loading="loading">
+        v-loading="loading"
+        :row-key="row => row.id"
+        ref="favoritesTable">
         <el-table-column type="expand">
           <template slot-scope="props">
             <div class="expand-content">
@@ -53,7 +63,7 @@
               <el-divider></el-divider>
 
               <div class="action-buttons">
-                <el-button size="small" type="primary" @click="viewQuestion(props.row.questionId)">
+                <el-button size="small" type="primary" @click="viewItem(props.row)">
                   查看详情
                 </el-button>
                 <el-button size="small" @click="editNotes(props.row)">
@@ -67,10 +77,18 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="题目" prop="question.title" min-width="200">
+        <el-table-column label="类型" width="100">
           <template slot-scope="scope">
-            <span class="question-title" @click="viewQuestion(scope.row.questionId)">
-              {{ scope.row.question ? scope.row.question.title : '加载中...' }}
+            <el-tag size="small" :type="getTypeTagType(scope.row.type)">
+              {{ getTypeText(scope.row.type) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="标题" min-width="200">
+          <template slot-scope="scope">
+            <span class="question-title" @click="viewItem(scope.row)">
+              {{ getItemTitle(scope.row) }}
             </span>
           </template>
         </el-table-column>
@@ -78,7 +96,7 @@
         <el-table-column label="分类" width="120">
           <template slot-scope="scope">
             <el-tag size="small" type="info">
-              {{ scope.row.question ? scope.row.question.category : '-' }}
+              {{ getItemCategory(scope.row) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -102,7 +120,7 @@
 
         <el-table-column label="操作" width="200">
           <template slot-scope="scope">
-            <el-button size="mini" type="text" @click="viewQuestion(scope.row.questionId)">
+            <el-button size="mini" type="text" @click="viewItem(scope.row)">
               查看
             </el-button>
             <el-button size="mini" type="text" @click="editNotes(scope.row)">
@@ -142,10 +160,19 @@ export default {
     return {
       user: JSON.parse(localStorage.getItem('user') || '{}'),
       favorites: [],
+      filterType: 'all', // all, question, wrong, tutorial, knowledge
       loading: false,
       notesDialogVisible: false,
       editingNotes: '',
       currentEditingRow: null
+    }
+  },
+  computed: {
+    filteredFavorites() {
+      if (this.filterType === 'all') {
+        return this.favorites
+      }
+      return this.favorites.filter(f => f.type === this.filterType)
     }
   },
   mounted() {
@@ -156,26 +183,81 @@ export default {
       this.loading = true
       this.$http.get(`/favorites/user/${this.user.id}`).then(res => {
         if (res.data) {
-          this.favorites = res.data
-          // 加载每个收藏的题目详情
-          this.loadQuestionDetails()
+          // 为每个收藏项添加type字段（如果后端没有提供）
+          this.favorites = res.data.map(item => {
+            if (!item.type) {
+              // 根据字段判断类型
+              if (item.questionId) item.type = 'question'
+              else if (item.tutorialId) item.type = 'tutorial'
+              else if (item.knowledgeId) item.type = 'knowledge'
+              else if (item.wrongQuestionId) item.type = 'wrong'
+            }
+            return item
+          })
+          // 加载每个收藏的详情
+          this.loadItemDetails()
         }
       }).finally(() => {
         this.loading = false
       })
     },
-    loadQuestionDetails() {
+    loadItemDetails() {
       this.favorites.forEach(favorite => {
-        this.$http.get(`/questions/${favorite.questionId}`).then(res => {
-          if (res.data) {
-            this.$set(favorite, 'question', res.data)
-          }
-        }).catch(() => {})
+        if (favorite.questionId) {
+          this.$http.get(`/questions/${favorite.questionId}`).then(res => {
+            if (res.data) {
+              this.$set(favorite, 'question', res.data)
+            }
+          }).catch(() => {})
+        } else if (favorite.tutorialId) {
+          this.$http.get(`/tutorials/${favorite.tutorialId}`).then(res => {
+            if (res.data) {
+              this.$set(favorite, 'tutorial', res.data)
+            }
+          }).catch(() => {})
+        } else if (favorite.knowledgeId) {
+          this.$http.get(`/knowledge/${favorite.knowledgeId}`).then(res => {
+            if (res.data) {
+              this.$set(favorite, 'knowledge', res.data)
+            }
+          }).catch(() => {})
+        } else if (favorite.wrongQuestionId) {
+          this.$http.get(`/wrong-questions/${favorite.wrongQuestionId}`).then(res => {
+            if (res.data) {
+              this.$set(favorite, 'wrongQuestion', res.data)
+              // 加载错题对应的题目
+              if (res.data.questionId) {
+                this.$http.get(`/questions/${res.data.questionId}`).then(qRes => {
+                  if (qRes.data) {
+                    this.$set(favorite, 'question', qRes.data)
+                  }
+                }).catch(() => {})
+              }
+            }
+          }).catch(() => {})
+        }
       })
     },
-    viewQuestion(questionId) {
-      // 跳转到题目详情
-      this.$message.info('题目详情功能开发中...')
+    viewItem(item) {
+      // 根据类型跳转到不同的页面
+      if (item.type === 'question' && item.questionId) {
+        // 展开表格行显示详情
+        if (this.$refs.favoritesTable) {
+          this.$refs.favoritesTable.toggleRowExpansion(item, true)
+        }
+      } else if (item.type === 'wrong' && item.wrongQuestion) {
+        // 跳转到错题本
+        this.$router.push('/home/wrong-questions')
+      } else if (item.type === 'tutorial' && item.tutorialId) {
+        // 跳转到教程详情
+        this.$router.push(`/home/tutorial/${item.tutorialId}`)
+      } else if (item.type === 'knowledge' && item.knowledgeId) {
+        // 展开知识点详情（可以打开对话框或跳转）
+        this.$message.info('正在打开知识点...')
+        this.$router.push('/home/knowledge')
+      } else {
+        this.$message.info('内容加载中...')
+      }
     },
     editNotes(row) {
       this.currentEditingRow = row
@@ -242,6 +324,38 @@ export default {
       if (!dateStr) return '-'
       const date = new Date(dateStr)
       return date.toLocaleString('zh-CN')
+    },
+    getTypeText(type) {
+      const types = {
+        'question': '题目',
+        'wrong': '错题',
+        'tutorial': '教程',
+        'knowledge': '知识'
+      }
+      return types[type] || '未知'
+    },
+    getTypeTagType(type) {
+      const types = {
+        'question': 'primary',
+        'wrong': 'danger',
+        'tutorial': 'success',
+        'knowledge': 'warning'
+      }
+      return types[type] || 'info'
+    },
+    getItemTitle(item) {
+      if (item.question) return item.question.title
+      if (item.tutorial) return item.tutorial.title
+      if (item.knowledge) return item.knowledge.title
+      if (item.wrongQuestion && item.wrongQuestion.question) return item.wrongQuestion.question.title
+      return '加载中...'
+    },
+    getItemCategory(item) {
+      if (item.question) return item.question.category
+      if (item.tutorial) return item.tutorial.category
+      if (item.knowledge) return item.knowledge.category
+      if (item.wrongQuestion && item.wrongQuestion.question) return item.wrongQuestion.question.category
+      return '-'
     }
   }
 }

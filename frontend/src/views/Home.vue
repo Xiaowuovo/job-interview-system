@@ -36,7 +36,7 @@
           </router-link>
           <router-link to="/home/interview" class="nav-item" :class="{ active: $route.path === '/home/interview' }">
             <i class="el-icon-microphone"></i>
-            <span v-show="!sidebarCollapsed">AI面试</span>
+            <span v-show="!sidebarCollapsed">AI模拟问答</span>
             <span class="nav-badge" v-show="!sidebarCollapsed">AI</span>
           </router-link>
           <router-link to="/home/wrong-questions" class="nav-item" :class="{ active: $route.path === '/home/wrong-questions' }">
@@ -64,6 +64,34 @@
             <span v-show="!sidebarCollapsed">成绩记录</span>
           </router-link>
         </div>
+
+        <!-- 教师端菜单 -->
+        <div class="nav-section" v-if="isTeacher">
+          <div class="nav-section-title" v-show="!sidebarCollapsed">
+            教师管理
+            <el-tag size="mini" type="success" style="margin-left: 8px;">TEACHER</el-tag>
+          </div>
+          <router-link to="/home/teacher/dashboard" class="nav-item" :class="{ active: $route.path === '/home/teacher/dashboard' }">
+            <i class="el-icon-s-platform"></i>
+            <span v-show="!sidebarCollapsed">工作台</span>
+          </router-link>
+          <router-link to="/home/teacher/questions" class="nav-item" :class="{ active: $route.path === '/home/teacher/questions' }">
+            <i class="el-icon-edit-outline"></i>
+            <span v-show="!sidebarCollapsed">题目管理</span>
+          </router-link>
+          <router-link to="/home/teacher/tutorials" class="nav-item" :class="{ active: $route.path === '/home/teacher/tutorials' }">
+            <i class="el-icon-reading"></i>
+            <span v-show="!sidebarCollapsed">教程管理</span>
+          </router-link>
+          <router-link to="/home/teacher/courses" class="nav-item" :class="{ active: $route.path === '/home/teacher/courses' }">
+            <i class="el-icon-collection"></i>
+            <span v-show="!sidebarCollapsed">课程管理</span>
+          </router-link>
+          <router-link to="/home/teacher/knowledge" class="nav-item" :class="{ active: $route.path === '/home/teacher/knowledge' }">
+            <i class="el-icon-notebook-2"></i>
+            <span v-show="!sidebarCollapsed">知识点管理</span>
+          </router-link>
+        </div>
       </nav>
       
       <div class="sidebar-footer">
@@ -83,16 +111,49 @@
         <div class="header-right">
           <div class="header-search">
             <i class="el-icon-search"></i>
-            <input type="text" placeholder="搜索题目、知识点..." />
+            <input type="text" placeholder="搜索题目、知识点..." v-model="searchQuery" @keyup.enter="handleSearch" @input="handleSearchInput" />
+            <div v-if="showSearchResults && searchResults.length > 0" class="search-results">
+              <div class="search-result-item" v-for="item in searchResults" :key="item.id" @click="handleSearchResultClick(item)">
+                <i :class="item.type === 'question' ? 'el-icon-edit' : 'el-icon-notebook-2'"></i>
+                <div class="result-info">
+                  <div class="result-title">{{ item.title }}</div>
+                  <div class="result-meta">{{ item.type === 'question' ? '题目' : '知识点' }} · {{ item.category }}</div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="header-actions">
             <button class="theme-toggle-btn" @click="handleToggleTheme" :title="currentTheme === 'dark' ? '切换到浅色模式' : '切换到深色模式'">
               <i :class="currentTheme === 'dark' ? 'el-icon-sunny' : 'el-icon-moon'"></i>
             </button>
-            <button class="action-btn" title="通知">
-              <i class="el-icon-bell"></i>
-              <span class="badge">3</span>
-            </button>
+            <el-dropdown trigger="click" @command="handleNotificationCommand">
+              <button class="action-btn" title="通知">
+                <i class="el-icon-bell"></i>
+                <span class="badge" v-if="unreadNotificationCount > 0">{{ unreadNotificationCount }}</span>
+              </button>
+              <el-dropdown-menu slot="dropdown" class="lc-dropdown notification-dropdown">
+                <div class="notification-header">
+                  <span>通知中心</span>
+                  <el-button type="text" size="small" @click="markAllAsRead" v-if="unreadNotificationCount > 0">全部标为已读</el-button>
+                </div>
+                <div class="notification-list">
+                  <el-dropdown-item v-for="notification in notifications" :key="notification.id" :command="notification.id" :class="{'unread': !notification.read}">
+                    <div class="notification-item">
+                      <i :class="getNotificationIcon(notification.type)" :style="{color: getNotificationColor(notification.type)}"></i>
+                      <div class="notification-content">
+                        <div class="notification-title">{{ notification.title }}</div>
+                        <div class="notification-time">{{ formatNotificationTime(notification.time) }}</div>
+                      </div>
+                      <span v-if="!notification.read" class="unread-dot"></span>
+                    </div>
+                  </el-dropdown-item>
+                  <div v-if="notifications.length === 0" class="no-notifications">
+                    <i class="el-icon-bell"></i>
+                    <p>暂无通知</p>
+                  </div>
+                </div>
+              </el-dropdown-menu>
+            </el-dropdown>
             <el-dropdown trigger="click" @command="handleCommand">
               <div class="user-avatar">
                 <div class="avatar-circle">{{ user.username ? user.username.charAt(0).toUpperCase() : 'U' }}</div>
@@ -132,7 +193,42 @@ export default {
     return {
       user: JSON.parse(localStorage.getItem('user') || '{}'),
       sidebarCollapsed: false,
-      currentTheme: 'light'
+      currentTheme: 'light',
+      searchQuery: '',
+      searchResults: [],
+      showSearchResults: false,
+      searchTimer: null,
+      notifications: [
+        {
+          id: 1,
+          type: 'success',
+          title: '恭喜！你完成了今日的学习目标',
+          time: new Date(Date.now() - 1000 * 60 * 30),
+          read: false
+        },
+        {
+          id: 2,
+          type: 'info',
+          title: '新的知识点已添加到知识库',
+          time: new Date(Date.now() - 1000 * 60 * 60 * 2),
+          read: false
+        },
+        {
+          id: 3,
+          type: 'warning',
+          title: '你有3道错题待复习',
+          time: new Date(Date.now() - 1000 * 60 * 60 * 5),
+          read: true
+        }
+      ]
+    }
+  },
+  computed: {
+    unreadNotificationCount() {
+      return this.notifications.filter(n => !n.read).length
+    },
+    isTeacher() {
+      return this.user.role === 'TEACHER'
     }
   },
   created() {
@@ -141,6 +237,13 @@ export default {
     }
     // 获取当前主题
     this.currentTheme = this.$getTheme()
+  },
+  mounted() {
+    // 点击外部关闭搜索结果
+    document.addEventListener('click', this.handleClickOutside)
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this.handleClickOutside)
   },
   methods: {
     handleToggleTheme() {
@@ -161,7 +264,7 @@ export default {
         '/home/tutorials': '面试教程',
         '/home/knowledge': '知识库',
         '/home/practice': '题目练习',
-        '/home/interview': 'AI模拟面试',
+        '/home/interview': 'AI模拟问答',
         '/home/wrong-questions': '错题本',
         '/home/favorites': '收藏夹',
         '/home/ability': '能力评估',
@@ -190,6 +293,127 @@ export default {
         this.$message.success('已退出登录')
         this.$router.push('/login')
       }).catch(() => {})
+    },
+    handleSearchInput() {
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer)
+      }
+      if (!this.searchQuery.trim()) {
+        this.showSearchResults = false
+        this.searchResults = []
+        return
+      }
+      this.searchTimer = setTimeout(() => {
+        this.performSearch()
+      }, 300)
+    },
+    handleSearch() {
+      if (!this.searchQuery.trim()) {
+        return
+      }
+      this.performSearch()
+    },
+    async performSearch() {
+      try {
+        const query = this.searchQuery.toLowerCase()
+        const results = []
+        
+        // 搜索题目
+        const questionsRes = await this.$http.get('/questions')
+        if (questionsRes.data) {
+          questionsRes.data
+            .filter(q => q.title.toLowerCase().includes(query) || (q.tags && q.tags.some(t => t.toLowerCase().includes(query))))
+            .slice(0, 3)
+            .forEach(q => {
+              results.push({
+                id: `question-${q.id}`,
+                type: 'question',
+                title: q.title,
+                category: q.category || '未分类',
+                questionId: q.id
+              })
+            })
+        }
+        
+        // 搜索知识点
+        const knowledgeRes = await this.$http.get('/knowledge')
+        if (knowledgeRes.data) {
+          knowledgeRes.data
+            .filter(k => k.title.toLowerCase().includes(query) || (k.content && k.content.toLowerCase().includes(query)))
+            .slice(0, 3)
+            .forEach(k => {
+              results.push({
+                id: `knowledge-${k.id}`,
+                type: 'knowledge',
+                title: k.title,
+                category: k.category || '未分类',
+                knowledgeId: k.id
+              })
+            })
+        }
+        
+        this.searchResults = results.slice(0, 5)
+        this.showSearchResults = true
+      } catch (error) {
+        console.error('搜索失败:', error)
+      }
+    },
+    handleSearchResultClick(item) {
+      this.showSearchResults = false
+      this.searchQuery = ''
+      
+      if (item.type === 'question') {
+        this.$router.push('/home/practice')
+      } else if (item.type === 'knowledge') {
+        this.$router.push('/home/knowledge')
+      }
+    },
+    handleNotificationCommand(notificationId) {
+      const notification = this.notifications.find(n => n.id === notificationId)
+      if (notification && !notification.read) {
+        notification.read = true
+      }
+    },
+    markAllAsRead() {
+      this.notifications.forEach(n => n.read = true)
+      this.$message.success('已全部标为已读')
+    },
+    getNotificationIcon(type) {
+      const icons = {
+        success: 'el-icon-success',
+        info: 'el-icon-info',
+        warning: 'el-icon-warning',
+        error: 'el-icon-error'
+      }
+      return icons[type] || 'el-icon-info'
+    },
+    getNotificationColor(type) {
+      const colors = {
+        success: '#67C23A',
+        info: '#409EFF',
+        warning: '#E6A23C',
+        error: '#F56C6C'
+      }
+      return colors[type] || '#409EFF'
+    },
+    formatNotificationTime(time) {
+      const now = new Date()
+      const diff = now - new Date(time)
+      const minutes = Math.floor(diff / 1000 / 60)
+      const hours = Math.floor(minutes / 60)
+      const days = Math.floor(hours / 24)
+      
+      if (minutes < 1) return '刚刚'
+      if (minutes < 60) return `${minutes}分钟前`
+      if (hours < 24) return `${hours}小时前`
+      if (days < 7) return `${days}天前`
+      return new Date(time).toLocaleDateString()
+    },
+    handleClickOutside(event) {
+      const searchContainer = this.$el.querySelector('.header-search')
+      if (searchContainer && !searchContainer.contains(event.target)) {
+        this.showSearchResults = false
+      }
     }
   }
 }
@@ -622,7 +846,183 @@ export default {
 
 /* 下拉菜单样式 */
 .lc-dropdown {
-  background: #282828 !important;
-  border: 1px solid #3c3c3c !important;
+  background: var(--lc-bg-card) !important;
+  border: 1px solid var(--lc-border) !important;
+  border-radius: var(--lc-radius-lg) !important;
+  box-shadow: var(--lc-shadow-lg) !important;
+  padding: 4px !important;
+}
+
+.lc-dropdown /deep/ .el-dropdown-menu__item {
+  color: var(--lc-text-primary) !important;
+  padding: 10px 16px !important;
+  border-radius: var(--lc-radius) !important;
+  transition: all var(--lc-transition) !important;
+}
+
+.lc-dropdown /deep/ .el-dropdown-menu__item:hover {
+  background: var(--lc-bg-hover) !important;
+  color: var(--lc-primary) !important;
+}
+
+.lc-dropdown /deep/ .el-dropdown-menu__item i {
+  color: var(--lc-text-muted);
+  margin-right: 8px;
+}
+
+.lc-dropdown /deep/ .el-dropdown-menu__item:hover i {
+  color: var(--lc-primary);
+}
+
+/* 搜索结果下拉框 */
+.header-search {
+  position: relative;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--lc-bg-card);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius-lg);
+  box-shadow: var(--lc-shadow-lg);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all var(--lc-transition);
+  border-bottom: 1px solid var(--lc-border);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: var(--lc-bg-hover);
+}
+
+.search-result-item i {
+  font-size: 20px;
+  color: var(--lc-primary);
+  margin-right: 12px;
+}
+
+.result-info {
+  flex: 1;
+}
+
+.result-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lc-text-primary);
+  margin-bottom: 4px;
+}
+
+.result-meta {
+  font-size: 12px;
+  color: var(--lc-text-muted);
+}
+
+/* 通知下拉框 */
+.notification-dropdown {
+  min-width: 360px !important;
+  max-width: 400px !important;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--lc-border);
+  font-weight: 600;
+  color: var(--lc-text-primary);
+}
+
+.notification-header /deep/ .el-button--text {
+  color: var(--lc-primary) !important;
+  font-size: 12px;
+  padding: 0;
+}
+
+.notification-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-dropdown /deep/ .el-dropdown-menu__item {
+  padding: 0 !important;
+  height: auto !important;
+  line-height: normal !important;
+}
+
+.notification-dropdown /deep/ .el-dropdown-menu__item.unread {
+  background: var(--lc-primary-bg) !important;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 16px;
+  position: relative;
+}
+
+.notification-item i {
+  font-size: 20px;
+  margin-right: 12px;
+  margin-top: 2px;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-title {
+  font-size: 14px;
+  color: var(--lc-text-primary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: var(--lc-text-muted);
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lc-primary);
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.no-notifications {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--lc-text-muted);
+}
+
+.no-notifications i {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+.no-notifications p {
+  font-size: 14px;
+  margin: 0;
 }
 </style>

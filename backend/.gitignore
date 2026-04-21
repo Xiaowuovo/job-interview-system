@@ -1,0 +1,29 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Logs
+logs/
+*.log
+
+# Database
+*.h2.db
+*.trace.db
+*.lock.db
+
+# Uploads
+uploads/
+src/main/resources/static/uploads/
+
+# Local configuration
+application-local.yml
+application-local.properties
+application-prod.yml
+application-prod.properties
+.env

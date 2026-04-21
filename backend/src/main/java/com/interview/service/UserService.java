@@ -120,4 +120,35 @@ public class UserService {
     public Optional<UserAbilityModel> getUserAbility(Long userId) {
         return abilityModelRepository.findByUserId(userId);
     }
+
+    @Transactional
+    public boolean changePassword(Long userId, String oldPassword, String newPassword) {
+        log.info("用户修改密码: userId={}", userId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+        
+        // 验证旧密码
+        boolean isValid = false;
+        if (user.getSalt() != null && !user.getSalt().isEmpty()) {
+            isValid = PasswordUtil.verifyPassword(oldPassword, user.getPassword(), user.getSalt());
+        } else {
+            isValid = user.getPassword().equals(oldPassword);
+        }
+        
+        if (!isValid) {
+            log.warn("修改密码失败，旧密码错误: userId={}", userId);
+            return false;
+        }
+        
+        // 设置新密码
+        String salt = PasswordUtil.generateSalt();
+        String encryptedPassword = PasswordUtil.encryptPassword(newPassword, salt);
+        user.setPassword(encryptedPassword);
+        user.setSalt(salt);
+        userRepository.save(user);
+        
+        log.info("用户密码修改成功: userId={}", userId);
+        return true;
+    }
 }

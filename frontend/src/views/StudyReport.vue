@@ -230,10 +230,47 @@ export default {
 
       this.$http.get(`/reports/study/${this.user.id}${params}`).then(res => {
         if (res.data) {
-          this.report = res.data
+          // 处理数据，确保所有字段都有默认值
+          this.report = {
+            totalStudyTime: res.data.totalStudyTime || 0,
+            studyDays: res.data.studyDays || 0,
+            avgStudyTime: res.data.avgStudyTime || 0,
+            totalQuestions: res.data.totalQuestions || 0,
+            correctQuestions: res.data.correctQuestions || 0,
+            accuracy: res.data.accuracy || '0.0',
+            avgTestScore: res.data.avgTestScore || '0.0',
+            testCount: res.data.testCount || 0,
+            interviewCount: res.data.interviewCount || 0,
+            wrongCount: res.data.wrongCount || 0,
+            masteredCount: res.data.masteredCount || 0,
+            categoryStats: res.data.categoryStats || {},
+            abilityModel: res.data.abilityModel || null,
+            suggestions: res.data.suggestions || ['暂无学习建议'],
+            achievements: res.data.achievements || []
+          }
           this.$nextTick(() => {
             this.renderAbilityChart()
           })
+        }
+      }).catch(err => {
+        console.error('加载学习报告失败', err)
+        // 设置默认空数据
+        this.report = {
+          totalStudyTime: 0,
+          studyDays: 0,
+          avgStudyTime: 0,
+          totalQuestions: 0,
+          correctQuestions: 0,
+          accuracy: '0.0',
+          avgTestScore: '0.0',
+          testCount: 0,
+          interviewCount: 0,
+          wrongCount: 0,
+          masteredCount: 0,
+          categoryStats: {},
+          abilityModel: null,
+          suggestions: ['开始学习后，这里将显示个性化建议'],
+          achievements: []
         }
       }).finally(() => {
         this.loading = false
@@ -241,13 +278,18 @@ export default {
     },
     loadTrend() {
       this.$http.get(`/reports/trend/${this.user.id}?days=30`).then(res => {
-        if (res.data) {
+        if (res.data && res.data.dates && res.data.dates.length > 0) {
           this.trendData = res.data
           this.$nextTick(() => {
             this.renderTrendChart()
           })
+        } else {
+          // 没有数据时不显示图表
+          this.trendData = null
         }
-      }).catch(() => {})
+      }).catch(() => {
+        this.trendData = null
+      })
     },
     renderTrendChart() {
       if (!this.trendData) return

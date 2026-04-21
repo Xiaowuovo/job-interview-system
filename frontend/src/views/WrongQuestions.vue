@@ -60,7 +60,7 @@
           </el-select>
         </el-col>
         <el-col :span="5">
-          <el-select v-model="filterCategory" placeholder="筛选分类" @change="loadWrongQuestions" style="width: 100%;">
+          <el-select v-model="filterCategory" placeholder="筛选分类" @change="applyFilters" style="width: 100%;">
             <el-option label="全部分类" value=""></el-option>
             <el-option label="Java" value="Java"></el-option>
             <el-option label="前端" value="前端"></el-option>
@@ -72,7 +72,7 @@
           </el-select>
         </el-col>
         <el-col :span="5">
-          <el-select v-model="filterDifficulty" placeholder="筛选难度" @change="loadWrongQuestions" style="width: 100%;">
+          <el-select v-model="filterDifficulty" placeholder="筛选难度" @change="applyFilters" style="width: 100%;">
             <el-option label="全部难度" value=""></el-option>
             <el-option label="简单" value="EASY"></el-option>
             <el-option label="中等" value="MEDIUM"></el-option>
@@ -235,6 +235,7 @@ export default {
     return {
       user: JSON.parse(localStorage.getItem('user') || '{}'),
       wrongQuestions: [],
+      allWrongQuestions: [], // 保存原始数据
       statistics: {
         totalWrongQuestions: 0,
         masteredCount: 0,
@@ -277,23 +278,57 @@ export default {
             questions = questions.filter(q => q.isMastered)
           }
 
-          // 分类筛选
-          if (this.filterCategory) {
-            questions = questions.filter(q =>
-              q.question && q.question.category === this.filterCategory
-            )
-          }
-
-          // 难度筛选
-          if (this.filterDifficulty) {
-            questions = questions.filter(q =>
-              q.question && q.question.difficulty === this.filterDifficulty
-            )
-          }
-
-          this.wrongQuestions = questions
+          this.allWrongQuestions = questions // 保存原始数据
+          this.wrongQuestions = [...questions] // 复制一份用于显示
+          
+          // 加载题目详情用于分类筛选
+          this.loadQuestionDetails()
         }
       })
+    },
+    loadQuestionDetails() {
+      // 为每个错题加载对应的题目信息
+      const promises = this.allWrongQuestions.map(wq => {
+        return this.$http.get(`/questions/${wq.questionId}`).then(res => {
+          if (res.data) {
+            this.$set(wq, 'question', res.data)
+          }
+        }).catch(() => {
+          // 如果获取失败，设置默认值
+          this.$set(wq, 'question', {
+            id: wq.questionId,
+            title: `题目${wq.questionId}`,
+            category: '全部分类',
+            difficulty: 'MEDIUM',
+            content: '题目内容加载中...'
+          })
+        })
+      })
+      
+      // 等待所有题目加载完成后再应用筛选
+      Promise.all(promises).then(() => {
+        this.applyFilters()
+      })
+    },
+    applyFilters() {
+      let questions = [...this.allWrongQuestions] // 从原始数据开始筛选
+      
+      // 分类筛选
+      if (this.filterCategory) {
+        questions = questions.filter(q =>
+          q.question && q.question.category === this.filterCategory
+        )
+      }
+
+      // 难度筛选
+      if (this.filterDifficulty) {
+        questions = questions.filter(q =>
+          q.question && q.question.difficulty === this.filterDifficulty
+        )
+      }
+      
+      // 更新显示的错题列表
+      this.wrongQuestions = questions
     },
     resetFilters() {
       this.filterStatus = 'all'
@@ -309,8 +344,13 @@ export default {
       })
     },
     getQuestionContent(questionId) {
-      // 这里简化处理，实际应该从题库获取题目详情
-      return `题目ID: ${questionId} 的详细内容...`
+      // 从所有错题中查找（包括被筛选掉的）
+      const wrongQuestion = this.allWrongQuestions.find(wq => wq.questionId === questionId) || 
+                           this.wrongQuestions.find(wq => wq.questionId === questionId)
+      if (wrongQuestion && wrongQuestion.question) {
+        return wrongQuestion.question.content || wrongQuestion.question.title || `题目${questionId}`
+      }
+      return `题目 ID: ${questionId} 的详细内容...`
     },
     viewQuestion(questionId) {
       // 跳转到题目详情页面

@@ -49,8 +49,14 @@
 
           <el-divider></el-divider>
 
-          <el-button type="primary" style="width: 100%;" @click="editDialogVisible = true">
+          <el-button type="primary" style="width: 100%; margin-bottom: 10px;" @click="editDialogVisible = true">
             <i class="el-icon-edit"></i> 编辑资料
+          </el-button>
+          <el-button style="width: 100%; margin-bottom: 10px;" @click="passwordDialogVisible = true">
+            <i class="el-icon-lock"></i> 修改密码
+          </el-button>
+          <el-button style="width: 100%;" @click="settingsDialogVisible = true">
+            <i class="el-icon-setting"></i> 设置
           </el-button>
         </el-card>
       </el-col>
@@ -152,6 +158,70 @@
       </el-col>
     </el-row>
 
+    <!-- 修改密码对话框 -->
+    <el-dialog
+      title="修改密码"
+      :visible.sync="passwordDialogVisible"
+      width="450px">
+      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordForm" label-width="100px">
+        <el-form-item label="旧密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password placeholder="请输入旧密码"></el-input>
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password placeholder="请输入新密码（6位以上）"></el-input>
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password placeholder="请再次输入新密码"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="passwordDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="changePassword">确定</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 设置对话框 -->
+    <el-dialog
+      title="设置"
+      :visible.sync="settingsDialogVisible"
+      width="500px">
+      <el-form :model="settingsForm" label-width="120px">
+        <el-form-item label="每日提醒">
+          <el-switch v-model="settingsForm.dailyReminder"></el-switch>
+          <span style="margin-left: 10px; color: #909399; font-size: 13px;">每日推送学习提醒</span>
+        </el-form-item>
+        <el-form-item label="消息通知">
+          <el-switch v-model="settingsForm.messageNotification"></el-switch>
+          <span style="margin-left: 10px; color: #909399; font-size: 13px;">接收系统消息通知</span>
+        </el-form-item>
+        <el-form-item label="学习提醒时间">
+          <el-time-picker
+            v-model="settingsForm.reminderTime"
+            placeholder="选择时间"
+            format="HH:mm"
+            value-format="HH:mm"
+            style="width: 100%;">
+          </el-time-picker>
+        </el-form-item>
+        <el-form-item label="默认学习目标">
+          <el-input-number v-model="settingsForm.dailyGoal" :min="1" :max="100" label="每日题目数"></el-input-number>
+          <span style="margin-left: 10px; color: #909399; font-size: 13px;">道/天</span>
+        </el-form-item>
+        <el-form-item label="隐私设置">
+          <el-switch v-model="settingsForm.profilePublic"></el-switch>
+          <span style="margin-left: 10px; color: #909399; font-size: 13px;">公开个人资料</span>
+        </el-form-item>
+        <el-form-item label="清除缓存">
+          <el-button size="small" @click="clearCache">清除本地缓存</el-button>
+          <span style="margin-left: 10px; color: #909399; font-size: 13px;">清除已保存的缓存数据</span>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="settingsDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveSettings">保存</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 编辑资料对话框 -->
     <el-dialog
       title="编辑个人资料"
@@ -183,9 +253,19 @@
 export default {
   name: 'Profile',
   data() {
+    const validateConfirmPassword = (rule, value, callback) => {
+      if (value !== this.passwordForm.newPassword) {
+        callback(new Error('两次输入密码不一致'))
+      } else {
+        callback()
+      }
+    }
+    
     return {
       userInfo: JSON.parse(localStorage.getItem('user') || '{}'),
       editDialogVisible: false,
+      passwordDialogVisible: false,
+      settingsDialogVisible: false,
       editForm: {
         nickname: '',
         email: '',
@@ -199,6 +279,31 @@ export default {
         phone: [
           { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
         ]
+      },
+      passwordForm: {
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      },
+      passwordRules: {
+        oldPassword: [
+          { required: true, message: '请输入旧密码', trigger: 'blur' }
+        ],
+        newPassword: [
+          { required: true, message: '请输入新密码', trigger: 'blur' },
+          { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+        ],
+        confirmPassword: [
+          { required: true, message: '请确认新密码', trigger: 'blur' },
+          { validator: validateConfirmPassword, trigger: 'blur' }
+        ]
+      },
+      settingsForm: {
+        dailyReminder: true,
+        messageNotification: true,
+        reminderTime: '09:00',
+        dailyGoal: 10,
+        profilePublic: true
       },
       learningStats: [],
       recentActivities: [],
@@ -364,16 +469,14 @@ export default {
     getRoleType(role) {
       const types = {
         'STUDENT': 'primary',
-        'TEACHER': 'success',
-        'ADMIN': 'danger'
+        'TEACHER': 'success'
       }
       return types[role] || 'info'
     },
     getRoleText(role) {
       const texts = {
         'STUDENT': '学生',
-        'TEACHER': '教师',
-        'ADMIN': '管理员'
+        'TEACHER': '教师'
       }
       return texts[role] || '用户'
     },
@@ -390,6 +493,63 @@ export default {
         'ENTERPRISE': '企业会员'
       }
       return texts[type] || '普通用户'
+    },
+    changePassword() {
+      this.$refs.passwordForm.validate(valid => {
+        if (valid) {
+          this.$http.post(`/users/${this.userInfo.id}/change-password`, {
+            oldPassword: this.passwordForm.oldPassword,
+            newPassword: this.passwordForm.newPassword
+          }).then(res => {
+            if (res.code === 200) {
+              this.$message.success('密码修改成功，请重新登录')
+              this.passwordDialogVisible = false
+              this.passwordForm = {
+                oldPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+              }
+              // 2秒后跳转到登录页
+              setTimeout(() => {
+                localStorage.removeItem('user')
+                this.$router.push('/login')
+              }, 2000)
+            }
+          }).catch(err => {
+            console.error('修改密码失败:', err)
+          })
+        }
+      })
+    },
+    saveSettings() {
+      this.$http.post(`/users/${this.userInfo.id}/settings`, this.settingsForm).then(() => {
+        this.$message.success('设置保存成功')
+        this.settingsDialogVisible = false
+        // 保存到本地存储
+        localStorage.setItem('userSettings', JSON.stringify(this.settingsForm))
+      }).catch(() => {
+        this.$message.error('设置保存失败')
+      })
+    },
+    clearCache() {
+      this.$confirm('确定要清除本地缓存吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 清除除了用户信息和设置以外的所有缓存
+        const user = localStorage.getItem('user')
+        const settings = localStorage.getItem('userSettings')
+        localStorage.clear()
+        if (user) localStorage.setItem('user', user)
+        if (settings) localStorage.setItem('userSettings', settings)
+        this.$message.success('缓存清除成功')
+      }).catch(() => {})
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '-'
+      const date = new Date(dateStr)
+      return date.toLocaleString('zh-CN')
     }
   }
 }

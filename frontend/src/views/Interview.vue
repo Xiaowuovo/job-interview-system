@@ -1,8 +1,8 @@
 <template>
   <div class="interview">
     <el-card v-if="!sessionStarted">
-      <h2>AI模拟面试</h2>
-      <p>AI面试官将根据您选择的岗位进行专业的模拟面试</p>
+      <h2>AI模拟问答</h2>
+      <p>AI问答助手将根据您选择的岗位进行专业的模拟问答练习</p>
       <el-form :model="form" label-width="100px" style="max-width: 500px; margin: 30px auto;">
         <el-form-item label="应聘岗位">
           <el-select v-model="form.position" placeholder="请选择岗位">
@@ -13,7 +13,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="startInterview">开始面试</el-button>
+          <el-button type="primary" @click="startInterview">开始问答</el-button>
           <el-button @click="$router.back()">返回</el-button>
         </el-form-item>
       </el-form>
@@ -21,7 +21,7 @@
 
     <el-card v-else>
       <div class="chat-header">
-        <h3>AI模拟面试 - {{ form.position }}</h3>
+        <h3>AI模拟问答 - {{ form.position }}</h3>
         <div class="interview-info">
           <el-tag type="info" size="small">
             <i class="el-icon-time"></i> {{ formatDuration(interviewDuration) }}
@@ -29,7 +29,7 @@
           <el-tag type="success" size="small">
             <i class="el-icon-chat-dot-round"></i> {{ questionCount }}/{{ maxQuestions }} 问题
           </el-tag>
-          <el-button type="danger" size="small" @click="endInterview">结束面试</el-button>
+          <el-button type="danger" size="small" @click="endInterview">结束问答</el-button>
         </div>
       </div>
 
@@ -77,8 +77,8 @@ export default {
       sending: false,
       questionCount: 0, // 已问问题数
       maxQuestions: 8, // 最大问题数
-      interviewTimer: null, // 面试计时器
-      interviewDuration: 0, // 面试时长(秒)
+      interviewTimer: null, // 问答计时器
+      interviewDuration: 0, // 问答时长(秒)
       maxDuration: 30 * 60 // 最大时长30分钟
     }
   },
@@ -100,14 +100,14 @@ export default {
           this.sessionEnded = false
           this.questionCount = 1 // 第一个问题
           this.interviewDuration = 0
-          this.addMessage('ai', `您好！欢迎参加${this.form.position}的面试。我是您的AI面试官。首先，请做一下自我介绍。`)
+          this.addMessage('ai', `您好！欢迎参加${this.form.position}的问答练习。我是您的AI问答助手。首先，请做一下自我介绍。`)
           
-          // 启动面试计时器
+          // 启动问答计时器
           this.startInterviewTimer()
         }
       }).catch(err => {
-        console.error('开始面试失败:', err)
-        this.$message.error('开始面试失败，请稍后重试')
+        console.error('开始问答失败:', err)
+        this.$message.error('开始问答失败，请稍后重试')
       })
     },
     startInterviewTimer() {
@@ -115,7 +115,7 @@ export default {
         this.interviewDuration++
         // 超过最大时长自动结束
         if (this.interviewDuration >= this.maxDuration) {
-          this.$message.warning('面试时间已到，自动结束面试')
+          this.$message.warning('问答时间已到，自动结束问答')
           this.autoEndInterview()
         }
       }, 1000)
@@ -137,7 +137,7 @@ export default {
           
           // 检查是否达到最大问题数
           if (this.questionCount >= this.maxQuestions) {
-            this.addMessage('ai', res.data.aiReply + '\n\n感谢您的参与，本次面试即将结束。')
+            this.addMessage('ai', res.data.aiReply + '\n\n感谢您的参与，本次问答练习即将结束。')
             setTimeout(() => {
               this.autoEndInterview()
             }, 2000)
@@ -179,7 +179,7 @@ export default {
     endInterview() {
       if (this.sessionEnded) return
       
-      this.$confirm('确定要结束面试吗？', '提示', {
+      this.$confirm('确定要结束问答吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -217,9 +217,9 @@ export default {
         duration: Math.floor(this.interviewDuration / 60),
         questionCount: this.questionCount
       }).then(() => {
-        this.$message.success(`面试结束！您的得分: ${score}分`)
+        this.$message.success(`问答结束！您的得分: ${score}分`)
         
-        // 发送面试完成事件
+        // 发送问答完成事件
         this.$bus.$emit(this.$events.INTERVIEW_COMPLETED, {
           score,
           questionCount: this.questionCount,
@@ -229,7 +229,7 @@ export default {
         this.$router.push('/home/records')
       }).catch(() => {
         this.sessionEnded = false // 允许重试
-        this.$message.error('保存面试记录失败')
+        this.$message.error('保存问答记录失败')
       })
     },
     generateFeedback(score) {
@@ -238,7 +238,7 @@ export default {
       } else if (score >= 70) {
         return '表现良好。基本能够回答问题，但在某些专业知识点上还需要加强。'
       } else {
-        return '需要继续努力。建议加强专业知识学习，多做面试练习。'
+        return '需要继续努力。建议加强专业知识学习，多做问答练习。'
       }
     }
   },

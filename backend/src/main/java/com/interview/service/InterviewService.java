@@ -19,6 +19,7 @@ import java.util.*;
 public class InterviewService {
 
     private final InterviewSessionRepository interviewSessionRepository;
+    private final ZhipuAIService zhipuAIService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -96,8 +97,10 @@ public class InterviewService {
         userMsg.put("timestamp", LocalDateTime.now().toString());
         conversation.add(userMsg);
 
-        // 生成AI回复（这里是模拟，实际应调用GPT API）
-        String aiReply = generateAIReply(session.getSessionType(), userMessage, conversation.size());
+        // 使用智谱AI生成回复
+        String systemPrompt = zhipuAIService.generateInterviewSystemPrompt(session.getPosition());
+        String conversationContext = buildConversationContext(conversation);
+        String aiReply = zhipuAIService.generateReply(systemPrompt, userMessage, conversationContext);
 
         Map<String, String> aiMsg = new HashMap<>();
         aiMsg.put("role", "AI");
@@ -121,35 +124,23 @@ public class InterviewService {
     }
 
     /**
-     * 生成AI回复（模拟版本）
+     * 构建对话上下文（用于AI理解对话历史）
      */
-    private String generateAIReply(SessionType type, String userMessage, int messageCount) {
-        // 这里是简化的规则引擎，实际应接入GPT等AI服务
-        List<String> technicalQuestions = Arrays.asList(
-            "很好！请解释一下Java中的多态性是如何实现的？",
-            "能详细说说Spring Boot的自动配置原理吗？",
-            "请手写一个单例模式的实现",
-            "如何设计一个高并发的系统？请从架构层面分析",
-            "面试接近尾声，还有什么问题想问我的吗？"
-        );
-
-        List<String> behavioralQuestions = Arrays.asList(
-            "很好！请分享一次您在团队中遇到冲突的经历，您是如何解决的？",
-            "描述一个您超预期完成的项目，您做了哪些努力？",
-            "当您面对紧急的线上问题时，您的处理流程是什么？",
-            "请说说您的职业规划，您希望在未来3年达到什么目标？",
-            "感谢您的分享！还有什么想补充的吗？"
-        );
-
-        int questionIndex = Math.min((messageCount / 2), 4);
-
-        if (type == SessionType.TECHNICAL) {
-            return technicalQuestions.get(questionIndex);
-        } else if (type == SessionType.BEHAVIORAL) {
-            return behavioralQuestions.get(questionIndex);
-        } else {
-            return "感谢您的回答！您对薪资有什么期望吗？";
+    private String buildConversationContext(List<Map<String, String>> conversation) {
+        if (conversation.isEmpty()) {
+            return "";
         }
+        
+        StringBuilder context = new StringBuilder();
+        // 只取最近的5轮对话作为上下文
+        int start = Math.max(0, conversation.size() - 10);
+        for (int i = start; i < conversation.size(); i++) {
+            Map<String, String> msg = conversation.get(i);
+            String role = msg.get("role");
+            String message = msg.get("message");
+            context.append(role).append(": ").append(message).append("\n");
+        }
+        return context.toString();
     }
 
     /**
