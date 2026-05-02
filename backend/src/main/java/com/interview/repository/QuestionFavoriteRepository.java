@@ -37,4 +37,9 @@ public interface QuestionFavoriteRepository extends JpaRepository<QuestionFavori
      * 统计用户收藏数量
      */
     long countByUserId(Long userId);
+
+    /**
+     * 查找用户对特定类型和ID的收藏
+     */
+    Optional<QuestionFavorite> findByUserIdAndTypeAndItemId(Long userId, String type, Long itemId);
 }

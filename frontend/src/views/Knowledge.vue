@@ -67,11 +67,9 @@
               </span>
             </p>
             <div class="progress-wrapper" v-if="getStudyProgress(kp.id)">
-              <el-progress
-                :percentage="getStudyProgress(kp.id).progress"
-                :status="getStudyProgress(kp.id).progress === 100 ? 'success' : ''"
-                :stroke-width="8">
-              </el-progress>
+              <el-tag :type="getLevelTagType(getStudyProgress(kp.id).level)" size="small">
+                {{ getLevelText(getStudyProgress(kp.id).level) }}
+              </el-tag>
             </div>
           </div>
         </el-card>
@@ -93,6 +91,14 @@
             </el-tag>
             <span class="category-tag">{{ currentKnowledge.category }}</span>
             <span class="importance-tag">重要度: {{ currentKnowledge.importance }}</span>
+            <el-button
+              :type="currentKnowledgeFavorited ? 'warning' : 'default'"
+              :icon="currentKnowledgeFavorited ? 'el-icon-star-on' : 'el-icon-star-off'"
+              size="small"
+              style="margin-left: 12px;"
+              @click="toggleKnowledgeFavorite">
+              {{ currentKnowledgeFavorited ? '已收藏' : '收藏' }}
+            </el-button>
           </div>
         </div>
 
@@ -103,28 +109,24 @@
         <el-divider></el-divider>
 
         <div class="study-actions">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <div class="progress-section">
-                <h4>学习进度</h4>
-                <el-slider
-                  v-model="studyProgress"
-                  :marks="{ 0: '0%', 50: '50%', 100: '100%' }"
-                  @change="updateProgress">
-                </el-slider>
-              </div>
-            </el-col>
-            <el-col :span="12">
-              <div class="time-section">
-                <h4>本次学习时长</h4>
-                <div class="time-display">{{ formatTime(studyTime) }}</div>
-              </div>
-            </el-col>
-          </el-row>
-
-          <el-button type="primary" @click="saveStudyRecord" style="margin-top: 20px;">
-            保存学习记录
-          </el-button>
+          <h4 style="margin: 0 0 14px;">学习进度</h4>
+          <div class="progress-levels">
+            <el-button
+              :type="studyLevel === 'understand' ? 'primary' : 'default'"
+              @click="setLevelAndSave('understand')">
+              <i class="el-icon-reading"></i> 了解
+            </el-button>
+            <el-button
+              :type="studyLevel === 'familiar' ? 'warning' : 'default'"
+              @click="setLevelAndSave('familiar')">
+              <i class="el-icon-edit-outline"></i> 熟悉
+            </el-button>
+            <el-button
+              :type="studyLevel === 'master' ? 'success' : 'default'"
+              @click="setLevelAndSave('master')">
+              <i class="el-icon-check"></i> 掌握
+            </el-button>
+          </div>
         </div>
       </div>
     </el-dialog>
@@ -148,44 +150,36 @@ export default {
       searchKeyword: '',
       detailDialogVisible: false,
       currentKnowledge: null,
-      studyProgress: 0,
-      studyTime: 0,
-      studyTimer: null,
-      studyStartTime: null
+      studyLevel: null,
+      currentKnowledgeFavorited: false
     }
   },
   mounted() {
     this.loadKnowledgePoints()
     this.loadStudyRecords()
   },
-  beforeDestroy() {
-    this.stopTimer()
-  },
   methods: {
     loadKnowledgePoints() {
-      let url = '/knowledge'
-      const params = []
-
-      // 使用查询参数进行筛选，而不是不同的URL
-      if (this.searchCategory) {
-        url = `/knowledge/category/${encodeURIComponent(this.searchCategory)}`
-      } else if (this.searchDifficulty) {
-        url = `/knowledge/difficulty/${this.searchDifficulty}`
-      }
-
-      this.$http.get(url).then(res => {
+      this.$http.get('/knowledge').then(res => {
         if (res.data) {
-          // 过滤掉空对象和无效数据
-          this.knowledgePoints = res.data.filter(kp => 
-            kp && kp.id && kp.title && kp.category
-          )
-          
-          // 应用难度筛选（如果同时选择了分类和难度）
-          if (this.searchCategory && this.searchDifficulty) {
-            this.knowledgePoints = this.knowledgePoints.filter(kp => 
-              kp.difficulty === this.searchDifficulty
+          let list = res.data.filter(kp => kp && kp.id && kp.title && kp.category)
+          // 分类筛选
+          if (this.searchCategory) {
+            list = list.filter(kp => kp.category === this.searchCategory)
+          }
+          // 难度筛选
+          if (this.searchDifficulty) {
+            list = list.filter(kp => kp.difficulty === this.searchDifficulty)
+          }
+          // 关键词筛选
+          if (this.searchKeyword && this.searchKeyword.trim()) {
+            const kw = this.searchKeyword.trim().toLowerCase()
+            list = list.filter(kp =>
+              (kp.title && kp.title.toLowerCase().includes(kw)) ||
+              (kp.content && kp.content.toLowerCase().includes(kw))
             )
           }
+          this.knowledgePoints = list
         } else {
           this.knowledgePoints = []
         }
@@ -202,26 +196,7 @@ export default {
       }).catch(() => {})
     },
     searchKnowledge() {
-      if (this.searchKeyword && this.searchKeyword.trim()) {
-        const keyword = encodeURIComponent(this.searchKeyword.trim())
-        this.$http.get(`/knowledge/search?keyword=${keyword}`).then(res => {
-          if (res.data && res.data.length > 0) {
-            // 过滤掉空对象
-            this.knowledgePoints = res.data.filter(kp => 
-              kp && kp.id && kp.title && kp.category
-            )
-          } else {
-            this.knowledgePoints = []
-            this.$message.info('未找到相关知识点')
-          }
-        }).catch(err => {
-          console.error('搜索失败', err)
-          this.knowledgePoints = []
-          this.$message.error('搜索失败，请重试')
-        })
-      } else {
-        this.loadKnowledgePoints()
-      }
+      this.loadKnowledgePoints()
     },
     viewDetail(kp) {
       this.currentKnowledge = kp
@@ -230,55 +205,63 @@ export default {
       // 增加浏览次数
       this.$http.post(`/knowledge/${kp.id}/view`)
 
+      // 检查收藏状态
+      this.$http.get(`/favorites/check-type?userId=${this.user.id}&type=knowledge&itemId=${kp.id}`)
+        .then(res => { this.currentKnowledgeFavorited = !!res.data }).catch(() => {})
+
       // 加载该知识点的学习记录
       this.$http.get(`/knowledge/study/${this.user.id}/${kp.id}`).then(res => {
         if (res.data) {
-          this.studyProgress = res.data.progress
+          this.studyLevel = res.data.level || null
         } else {
-          this.studyProgress = 0
+          this.studyLevel = null
         }
       }).catch(() => {
-        this.studyProgress = 0
+        this.studyLevel = null
       })
-
-      // 开始计时
-      this.startTimer()
     },
     handleClose() {
-      this.stopTimer()
       this.detailDialogVisible = false
       this.currentKnowledge = null
-      this.studyProgress = 0
-      this.studyTime = 0
+      this.studyLevel = null
+      this.currentKnowledgeFavorited = false
     },
-    startTimer() {
-      this.studyStartTime = Date.now()
-      this.studyTimer = setInterval(() => {
-        this.studyTime = Math.floor((Date.now() - this.studyStartTime) / 1000)
-      }, 1000)
-    },
-    stopTimer() {
-      if (this.studyTimer) {
-        clearInterval(this.studyTimer)
-        this.studyTimer = null
+    toggleKnowledgeFavorite() {
+      if (!this.currentKnowledge) return
+      if (this.currentKnowledgeFavorited) {
+        this.$http.delete(`/favorites/remove?userId=${this.user.id}&type=knowledge&itemId=${this.currentKnowledge.id}`)
+          .then(() => { this.currentKnowledgeFavorited = false; this.$message.success('已取消收藏') })
+          .catch(() => {})
+      } else {
+        this.$http.post('/favorites/add', { userId: this.user.id, type: 'knowledge', itemId: this.currentKnowledge.id })
+          .then(() => { this.currentKnowledgeFavorited = true; this.$message.success('收藏成功') })
+          .catch(() => {})
       }
     },
-    updateProgress(value) {
-      this.studyProgress = value
-    },
-    saveStudyRecord() {
+    setLevelAndSave(level) {
+      const levelProgress = { understand: 30, familiar: 70, master: 100 }
       const data = {
         userId: this.user.id,
         knowledgePointId: this.currentKnowledge.id,
-        progress: this.studyProgress,
-        studyTime: this.studyTime
+        progress: levelProgress[level],
+        level: level,
+        studyTime: 0
       }
-
       this.$http.post('/knowledge/study', data).then(() => {
-        this.$message.success('学习记录已保存')
+        this.$message.success('学习进度已保存')
         this.loadStudyRecords()
         this.handleClose()
-      }).catch(() => {})
+      }).catch(() => {
+        this.$message.error('保存失败')
+      })
+    },
+    getLevelTagType(level) {
+      const types = { understand: 'info', familiar: 'warning', master: 'success' }
+      return types[level] || 'info'
+    },
+    getLevelText(level) {
+      const texts = { understand: '了解', familiar: '熟悉', master: '掌握' }
+      return texts[level] || '学习中'
     },
     getStudyProgress(kpId) {
       return this.studyRecords.find(r => r.knowledgePointId === kpId)
@@ -302,11 +285,6 @@ export default {
     renderMarkdown(content) {
       return md.render(content || '')
     },
-    formatTime(seconds) {
-      const minutes = Math.floor(seconds / 60)
-      const secs = seconds % 60
-      return `${minutes}分${secs}秒`
-    }
   }
 }
 </script>
@@ -404,6 +382,11 @@ export default {
 
 .progress-wrapper {
   margin-top: 10px;
+}
+
+.progress-levels {
+  display: flex;
+  gap: 12px;
 }
 
 /deep/ .el-progress-bar__outer {

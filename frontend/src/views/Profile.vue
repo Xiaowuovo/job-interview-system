@@ -55,9 +55,6 @@
           <el-button style="width: 100%; margin-bottom: 10px;" @click="passwordDialogVisible = true">
             <i class="el-icon-lock"></i> 修改密码
           </el-button>
-          <el-button style="width: 100%;" @click="settingsDialogVisible = true">
-            <i class="el-icon-setting"></i> 设置
-          </el-button>
         </el-card>
       </el-col>
 
@@ -180,48 +177,6 @@
       </span>
     </el-dialog>
 
-    <!-- 设置对话框 -->
-    <el-dialog
-      title="设置"
-      :visible.sync="settingsDialogVisible"
-      width="500px">
-      <el-form :model="settingsForm" label-width="120px">
-        <el-form-item label="每日提醒">
-          <el-switch v-model="settingsForm.dailyReminder"></el-switch>
-          <span style="margin-left: 10px; color: #909399; font-size: 13px;">每日推送学习提醒</span>
-        </el-form-item>
-        <el-form-item label="消息通知">
-          <el-switch v-model="settingsForm.messageNotification"></el-switch>
-          <span style="margin-left: 10px; color: #909399; font-size: 13px;">接收系统消息通知</span>
-        </el-form-item>
-        <el-form-item label="学习提醒时间">
-          <el-time-picker
-            v-model="settingsForm.reminderTime"
-            placeholder="选择时间"
-            format="HH:mm"
-            value-format="HH:mm"
-            style="width: 100%;">
-          </el-time-picker>
-        </el-form-item>
-        <el-form-item label="默认学习目标">
-          <el-input-number v-model="settingsForm.dailyGoal" :min="1" :max="100" label="每日题目数"></el-input-number>
-          <span style="margin-left: 10px; color: #909399; font-size: 13px;">道/天</span>
-        </el-form-item>
-        <el-form-item label="隐私设置">
-          <el-switch v-model="settingsForm.profilePublic"></el-switch>
-          <span style="margin-left: 10px; color: #909399; font-size: 13px;">公开个人资料</span>
-        </el-form-item>
-        <el-form-item label="清除缓存">
-          <el-button size="small" @click="clearCache">清除本地缓存</el-button>
-          <span style="margin-left: 10px; color: #909399; font-size: 13px;">清除已保存的缓存数据</span>
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="settingsDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveSettings">保存</el-button>
-      </span>
-    </el-dialog>
-
     <!-- 编辑资料对话框 -->
     <el-dialog
       title="编辑个人资料"
@@ -265,7 +220,6 @@ export default {
       userInfo: JSON.parse(localStorage.getItem('user') || '{}'),
       editDialogVisible: false,
       passwordDialogVisible: false,
-      settingsDialogVisible: false,
       editForm: {
         nickname: '',
         email: '',
@@ -297,13 +251,6 @@ export default {
           { required: true, message: '请确认新密码', trigger: 'blur' },
           { validator: validateConfirmPassword, trigger: 'blur' }
         ]
-      },
-      settingsForm: {
-        dailyReminder: true,
-        messageNotification: true,
-        reminderTime: '09:00',
-        dailyGoal: 10,
-        profilePublic: true
       },
       learningStats: [],
       recentActivities: [],
@@ -520,31 +467,6 @@ export default {
           })
         }
       })
-    },
-    saveSettings() {
-      this.$http.post(`/users/${this.userInfo.id}/settings`, this.settingsForm).then(() => {
-        this.$message.success('设置保存成功')
-        this.settingsDialogVisible = false
-        // 保存到本地存储
-        localStorage.setItem('userSettings', JSON.stringify(this.settingsForm))
-      }).catch(() => {
-        this.$message.error('设置保存失败')
-      })
-    },
-    clearCache() {
-      this.$confirm('确定要清除本地缓存吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        // 清除除了用户信息和设置以外的所有缓存
-        const user = localStorage.getItem('user')
-        const settings = localStorage.getItem('userSettings')
-        localStorage.clear()
-        if (user) localStorage.setItem('user', user)
-        if (settings) localStorage.setItem('userSettings', settings)
-        this.$message.success('缓存清除成功')
-      }).catch(() => {})
     },
     formatDate(dateStr) {
       if (!dateStr) return '-'

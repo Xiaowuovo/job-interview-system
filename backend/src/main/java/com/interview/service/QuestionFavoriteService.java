@@ -124,4 +124,38 @@ public class QuestionFavoriteService {
         }
         return count;
     }
+
+    /**
+     * 通用类型收藏（知识点、教程等）
+     */
+    public QuestionFavorite addFavoriteByType(Long userId, String type, Long itemId, String notes) {
+        Optional<QuestionFavorite> existing = favoriteRepository
+                .findByUserIdAndTypeAndItemId(userId, type, itemId);
+        if (existing.isPresent()) {
+            QuestionFavorite fav = existing.get();
+            fav.setNotes(notes);
+            return favoriteRepository.save(fav);
+        }
+        QuestionFavorite fav = new QuestionFavorite();
+        fav.setUserId(userId);
+        fav.setType(type);
+        fav.setItemId(itemId);
+        fav.setNotes(notes);
+        return favoriteRepository.save(fav);
+    }
+
+    /**
+     * 取消通用类型收藏
+     */
+    public void removeFavoriteByType(Long userId, String type, Long itemId) {
+        favoriteRepository.findByUserIdAndTypeAndItemId(userId, type, itemId)
+                .ifPresent(favoriteRepository::delete);
+    }
+
+    /**
+     * 检查通用类型是否已收藏
+     */
+    public boolean isFavoritedByType(Long userId, String type, Long itemId) {
+        return favoriteRepository.findByUserIdAndTypeAndItemId(userId, type, itemId).isPresent();
+    }
 }

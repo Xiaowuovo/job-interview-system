@@ -118,9 +118,6 @@
               </div>
               <el-divider></el-divider>
               <div class="action-buttons">
-                <el-button size="small" type="primary" @click="viewQuestion(props.row.questionId)">
-                  查看详情
-                </el-button>
                 <el-button size="small" @click="editNotes(props.row)">
                   {{ props.row.notes ? '编辑笔记' : '添加笔记' }}
                 </el-button>
@@ -494,7 +491,6 @@ export default {
 }
 
 .stat-card {
-  cursor: pointer;
   transition: all var(--lc-transition);
 }
 

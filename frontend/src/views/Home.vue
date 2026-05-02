@@ -51,10 +51,6 @@
         
         <div class="nav-section">
           <div class="nav-section-title" v-show="!sidebarCollapsed">分析</div>
-          <router-link to="/home/ability" class="nav-item" :class="{ active: $route.path === '/home/ability' }">
-            <i class="el-icon-data-analysis"></i>
-            <span v-show="!sidebarCollapsed">能力评估</span>
-          </router-link>
           <router-link to="/home/study-report" class="nav-item" :class="{ active: $route.path === '/home/study-report' }">
             <i class="el-icon-s-marketing"></i>
             <span v-show="!sidebarCollapsed">学习报告</span>
@@ -126,34 +122,6 @@
             <button class="theme-toggle-btn" @click="handleToggleTheme" :title="currentTheme === 'dark' ? '切换到浅色模式' : '切换到深色模式'">
               <i :class="currentTheme === 'dark' ? 'el-icon-sunny' : 'el-icon-moon'"></i>
             </button>
-            <el-dropdown trigger="click" @command="handleNotificationCommand">
-              <button class="action-btn" title="通知">
-                <i class="el-icon-bell"></i>
-                <span class="badge" v-if="unreadNotificationCount > 0">{{ unreadNotificationCount }}</span>
-              </button>
-              <el-dropdown-menu slot="dropdown" class="lc-dropdown notification-dropdown">
-                <div class="notification-header">
-                  <span>通知中心</span>
-                  <el-button type="text" size="small" @click="markAllAsRead" v-if="unreadNotificationCount > 0">全部标为已读</el-button>
-                </div>
-                <div class="notification-list">
-                  <el-dropdown-item v-for="notification in notifications" :key="notification.id" :command="notification.id" :class="{'unread': !notification.read}">
-                    <div class="notification-item">
-                      <i :class="getNotificationIcon(notification.type)" :style="{color: getNotificationColor(notification.type)}"></i>
-                      <div class="notification-content">
-                        <div class="notification-title">{{ notification.title }}</div>
-                        <div class="notification-time">{{ formatNotificationTime(notification.time) }}</div>
-                      </div>
-                      <span v-if="!notification.read" class="unread-dot"></span>
-                    </div>
-                  </el-dropdown-item>
-                  <div v-if="notifications.length === 0" class="no-notifications">
-                    <i class="el-icon-bell"></i>
-                    <p>暂无通知</p>
-                  </div>
-                </div>
-              </el-dropdown-menu>
-            </el-dropdown>
             <el-dropdown trigger="click" @command="handleCommand">
               <div class="user-avatar">
                 <div class="avatar-circle">{{ user.username ? user.username.charAt(0).toUpperCase() : 'U' }}</div>
@@ -163,9 +131,6 @@
               <el-dropdown-menu slot="dropdown" class="lc-dropdown">
                 <el-dropdown-item command="profile">
                   <i class="el-icon-user"></i> 个人中心
-                </el-dropdown-item>
-                <el-dropdown-item command="settings">
-                  <i class="el-icon-setting"></i> 设置
                 </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
                   <i class="el-icon-switch-button"></i> 退出登录
@@ -198,35 +163,10 @@ export default {
       searchResults: [],
       showSearchResults: false,
       searchTimer: null,
-      notifications: [
-        {
-          id: 1,
-          type: 'success',
-          title: '恭喜！你完成了今日的学习目标',
-          time: new Date(Date.now() - 1000 * 60 * 30),
-          read: false
-        },
-        {
-          id: 2,
-          type: 'info',
-          title: '新的知识点已添加到知识库',
-          time: new Date(Date.now() - 1000 * 60 * 60 * 2),
-          read: false
-        },
-        {
-          id: 3,
-          type: 'warning',
-          title: '你有3道错题待复习',
-          time: new Date(Date.now() - 1000 * 60 * 60 * 5),
-          read: true
-        }
-      ]
+      _placeholder: null
     }
   },
   computed: {
-    unreadNotificationCount() {
-      return this.notifications.filter(n => !n.read).length
-    },
     isTeacher() {
       return this.user.role === 'TEACHER'
     }
@@ -267,7 +207,6 @@ export default {
         '/home/interview': 'AI模拟问答',
         '/home/wrong-questions': '错题本',
         '/home/favorites': '收藏夹',
-        '/home/ability': '能力评估',
         '/home/study-report': '学习报告',
         '/home/records': '成绩记录',
         '/home/profile': '个人中心'
@@ -279,8 +218,6 @@ export default {
         this.logout()
       } else if (command === 'profile') {
         this.$router.push('/home/profile')
-      } else if (command === 'settings') {
-        this.$message.info('设置功能开发中...')
       }
     },
     logout() {
@@ -367,47 +304,6 @@ export default {
       } else if (item.type === 'knowledge') {
         this.$router.push('/home/knowledge')
       }
-    },
-    handleNotificationCommand(notificationId) {
-      const notification = this.notifications.find(n => n.id === notificationId)
-      if (notification && !notification.read) {
-        notification.read = true
-      }
-    },
-    markAllAsRead() {
-      this.notifications.forEach(n => n.read = true)
-      this.$message.success('已全部标为已读')
-    },
-    getNotificationIcon(type) {
-      const icons = {
-        success: 'el-icon-success',
-        info: 'el-icon-info',
-        warning: 'el-icon-warning',
-        error: 'el-icon-error'
-      }
-      return icons[type] || 'el-icon-info'
-    },
-    getNotificationColor(type) {
-      const colors = {
-        success: '#67C23A',
-        info: '#409EFF',
-        warning: '#E6A23C',
-        error: '#F56C6C'
-      }
-      return colors[type] || '#409EFF'
-    },
-    formatNotificationTime(time) {
-      const now = new Date()
-      const diff = now - new Date(time)
-      const minutes = Math.floor(diff / 1000 / 60)
-      const hours = Math.floor(minutes / 60)
-      const days = Math.floor(hours / 24)
-      
-      if (minutes < 1) return '刚刚'
-      if (minutes < 60) return `${minutes}分钟前`
-      if (hours < 24) return `${hours}小时前`
-      if (days < 7) return `${days}天前`
-      return new Date(time).toLocaleDateString()
     },
     handleClickOutside(event) {
       const searchContainer = this.$el.querySelector('.header-search')

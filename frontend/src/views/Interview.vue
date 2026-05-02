@@ -1,63 +1,136 @@
 <template>
-  <div class="interview">
-    <el-card v-if="!sessionStarted">
-      <h2>AI模拟问答</h2>
-      <p>AI问答助手将根据您选择的岗位进行专业的模拟问答练习</p>
-      <el-form :model="form" label-width="100px" style="max-width: 500px; margin: 30px auto;">
+  <div class="interview-layout">
+    <!-- 左侧：历史对话列表 -->
+    <div class="history-panel">
+      <div class="history-header">
+        <span class="history-title">历史对话</span>
+        <el-button type="primary" size="small" icon="el-icon-plus" @click="showNewChatDialog">
+          新对话
+        </el-button>
+      </div>
+      <div class="history-list">
+        <div v-if="historyLoading" class="history-loading">
+          <i class="el-icon-loading"></i>
+        </div>
+        <div
+          v-for="session in historyList"
+          :key="session.id"
+          class="history-item"
+          :class="{ active: currentSessionId === session.id }"
+          @click="loadSession(session)">
+          <div class="history-item-icon">
+            <i class="el-icon-chat-dot-round"></i>
+          </div>
+          <div class="history-item-info">
+            <div class="history-item-title">{{ session.position || 'AI问答' }}</div>
+            <div class="history-item-date">{{ formatDate(session.startTime || session.createdAt) }}</div>
+          </div>
+        </div>
+        <div v-if="!historyLoading && historyList.length === 0" class="history-empty">
+          <p>暂无历史对话</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧：对话区 -->
+    <div class="chat-panel">
+      <!-- 未开始：引导页 -->
+      <div v-if="!sessionStarted" class="chat-welcome">
+        <div class="welcome-icon"><i class="el-icon-service"></i></div>
+        <h2>AI模拟问答</h2>
+        <p>选择应聘岗位，开始您的AI模拟面试练习</p>
+        <el-button type="primary" size="medium" icon="el-icon-plus" @click="showNewChatDialog">
+          开始新对话
+        </el-button>
+      </div>
+
+      <!-- 查看历史对话（只读） -->
+      <div v-else-if="viewingHistory" class="chat-main">
+        <div class="chat-header">
+          <div class="chat-title">
+            <i class="el-icon-chat-dot-round"></i>
+            {{ currentPosition }} · 历史记录
+          </div>
+          <el-button size="small" @click="closeHistory">关闭</el-button>
+        </div>
+        <div class="chat-container" ref="chatContainer">
+          <div v-for="(msg, idx) in messages" :key="idx"
+               :class="['message', msg.type === 'user' ? 'user-message' : 'ai-message']">
+            <div class="message-avatar">
+              <i :class="msg.type === 'user' ? 'el-icon-user' : 'el-icon-service'"></i>
+            </div>
+            <div class="message-content">
+              <div class="message-bubble">{{ msg.content }}</div>
+              <div class="message-time">{{ formatTime(msg.time) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 进行中的对话 -->
+      <div v-else class="chat-main">
+        <div class="chat-header">
+          <div class="chat-title">
+            <i class="el-icon-service"></i>
+            {{ currentPosition }}
+          </div>
+          <el-button type="danger" size="small" @click="endInterview">结束对话</el-button>
+        </div>
+        <div class="chat-container" ref="chatContainer">
+          <div v-if="messages.length === 0" class="chat-placeholder">
+            <i class="el-icon-chat-dot-square"></i>
+            <p>AI助手已准备就绪，请输入消息开始对话</p>
+          </div>
+          <div v-for="(msg, idx) in messages" :key="idx"
+               :class="['message', msg.type === 'user' ? 'user-message' : 'ai-message']">
+            <div class="message-avatar">
+              <i :class="msg.type === 'user' ? 'el-icon-user' : 'el-icon-service'"></i>
+            </div>
+            <div class="message-content">
+              <div class="message-bubble">{{ msg.content }}</div>
+              <div class="message-time">{{ formatTime(msg.time) }}</div>
+            </div>
+          </div>
+          <div v-if="sending" class="message ai-message">
+            <div class="message-avatar"><i class="el-icon-service"></i></div>
+            <div class="message-content">
+              <div class="message-bubble typing">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input">
+          <el-input
+            v-model="inputMessage"
+            placeholder="输入消息，Enter发送..."
+            @keyup.enter.native="sendMessage"
+            :disabled="sending">
+          </el-input>
+          <el-button type="primary" @click="sendMessage" :loading="sending">发送</el-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新对话弹窗 -->
+    <el-dialog title="开始新对话" :visible.sync="newChatDialogVisible" width="400px">
+      <el-form label-width="80px">
         <el-form-item label="应聘岗位">
-          <el-select v-model="form.position" placeholder="请选择岗位">
+          <el-select v-model="newChatPosition" placeholder="请选择岗位" style="width: 100%">
             <el-option label="Java开发工程师" value="Java开发工程师"></el-option>
             <el-option label="前端开发工程师" value="前端开发工程师"></el-option>
             <el-option label="测试工程师" value="测试工程师"></el-option>
             <el-option label="产品经理" value="产品经理"></el-option>
+            <el-option label="后端开发工程师" value="后端开发工程师"></el-option>
+            <el-option label="全栈开发工程师" value="全栈开发工程师"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="startInterview">开始问答</el-button>
-          <el-button @click="$router.back()">返回</el-button>
-        </el-form-item>
       </el-form>
-    </el-card>
-
-    <el-card v-else>
-      <div class="chat-header">
-        <h3>AI模拟问答 - {{ form.position }}</h3>
-        <div class="interview-info">
-          <el-tag type="info" size="small">
-            <i class="el-icon-time"></i> {{ formatDuration(interviewDuration) }}
-          </el-tag>
-          <el-tag type="success" size="small">
-            <i class="el-icon-chat-dot-round"></i> {{ questionCount }}/{{ maxQuestions }} 问题
-          </el-tag>
-          <el-button type="danger" size="small" @click="endInterview">结束问答</el-button>
-        </div>
-      </div>
-
-      <div class="chat-container" ref="chatContainer">
-        <div v-for="(msg, index) in messages" :key="index"
-             :class="['message', msg.type === 'user' ? 'user-message' : 'ai-message']">
-          <div class="message-avatar">
-            <i :class="msg.type === 'user' ? 'el-icon-user' : 'el-icon-service'"></i>
-          </div>
-          <div class="message-content">
-            <div class="message-bubble">{{ msg.content }}</div>
-            <div class="message-time">{{ formatTime(msg.time) }}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="chat-input">
-        <el-input
-          v-model="inputMessage"
-          placeholder="请输入您的回答..."
-          @keyup.enter.native="sendMessage"
-          :disabled="sending">
-        </el-input>
-        <el-button type="primary" @click="sendMessage" :loading="sending">
-          发送
-        </el-button>
-      </div>
-    </el-card>
+      <span slot="footer">
+        <el-button @click="newChatDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="startInterview" :loading="starting">开始对话</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -66,289 +139,338 @@ export default {
   name: 'Interview',
   data() {
     return {
+      user: JSON.parse(localStorage.getItem('user') || '{}'),
       sessionStarted: false,
-      sessionId: null,
-      sessionEnded: false, // 防止重复结束
-      form: {
-        position: ''
-      },
+      viewingHistory: false,
+      currentSessionId: null,
+      currentPosition: '',
       messages: [],
       inputMessage: '',
       sending: false,
-      questionCount: 0, // 已问问题数
-      maxQuestions: 8, // 最大问题数
-      interviewTimer: null, // 问答计时器
-      interviewDuration: 0, // 问答时长(秒)
-      maxDuration: 30 * 60 // 最大时长30分钟
+      starting: false,
+      newChatDialogVisible: false,
+      newChatPosition: '',
+      historyList: [],
+      historyLoading: false
     }
   },
+  mounted() {
+    this.loadHistory()
+  },
   methods: {
+    loadHistory() {
+      this.historyLoading = true
+      this.$http.get(`/interview/history/${this.user.id}`).then(res => {
+        this.historyList = res.data || []
+      }).catch(() => {
+        this.historyList = []
+      }).finally(() => {
+        this.historyLoading = false
+      })
+    },
+    showNewChatDialog() {
+      this.newChatPosition = ''
+      this.newChatDialogVisible = true
+    },
     startInterview() {
-      if (!this.form.position) {
+      if (!this.newChatPosition) {
         this.$message.warning('请选择应聘岗位')
         return
       }
-
-      const user = JSON.parse(localStorage.getItem('user'))
+      this.starting = true
       this.$http.post('/interview/start', {
-        userId: user.id,
-        position: this.form.position
+        userId: this.user.id,
+        position: this.newChatPosition
       }).then(res => {
         if (res.data) {
-          this.sessionId = res.data.id
+          this.currentSessionId = res.data.id
+          this.currentPosition = this.newChatPosition
+          this.messages = []
           this.sessionStarted = true
-          this.sessionEnded = false
-          this.questionCount = 1 // 第一个问题
-          this.interviewDuration = 0
-          this.addMessage('ai', `您好！欢迎参加${this.form.position}的问答练习。我是您的AI问答助手。首先，请做一下自我介绍。`)
-          
-          // 启动问答计时器
-          this.startInterviewTimer()
+          this.viewingHistory = false
+          this.newChatDialogVisible = false
+          this.addMessage('ai', `您好！欢迎参加${this.newChatPosition}的模拟面试练习。我是您的AI面试助手，请先做一下自我介绍。`)
+          this.loadHistory()
         }
-      }).catch(err => {
-        console.error('开始问答失败:', err)
-        this.$message.error('开始问答失败，请稍后重试')
+      }).catch(() => {
+        this.$message.error('开始对话失败，请稍后重试')
+      }).finally(() => {
+        this.starting = false
       })
     },
-    startInterviewTimer() {
-      this.interviewTimer = setInterval(() => {
-        this.interviewDuration++
-        // 超过最大时长自动结束
-        if (this.interviewDuration >= this.maxDuration) {
-          this.$message.warning('问答时间已到，自动结束问答')
-          this.autoEndInterview()
-        }
-      }, 1000)
-    },
     sendMessage() {
-      if (!this.inputMessage.trim() || this.sending || this.sessionEnded) return
-
-      const userMessage = this.inputMessage
+      if (!this.inputMessage.trim() || this.sending) return
+      const userMessage = this.inputMessage.trim()
       this.addMessage('user', userMessage)
       this.inputMessage = ''
       this.sending = true
-
       this.$http.post('/interview/chat', {
-        sessionId: this.sessionId,
+        sessionId: this.currentSessionId,
         message: userMessage
       }).then(res => {
-        if (res.data) {
-          this.questionCount++
-          
-          // 检查是否达到最大问题数
-          if (this.questionCount >= this.maxQuestions) {
-            this.addMessage('ai', res.data.aiReply + '\n\n感谢您的参与，本次问答练习即将结束。')
-            setTimeout(() => {
-              this.autoEndInterview()
-            }, 2000)
-          } else {
-            this.addMessage('ai', res.data.aiReply)
-          }
+        if (res.data && res.data.aiReply) {
+          this.addMessage('ai', res.data.aiReply)
         }
+      }).catch(() => {
+        this.$message.error('发送失败，请重试')
       }).finally(() => {
         this.sending = false
       })
     },
-    addMessage(type, content) {
-      this.messages.push({
-        type,
-        content,
-        time: new Date()
-      })
-      this.$nextTick(() => {
-        this.scrollToBottom()
-      })
-    },
-    scrollToBottom() {
-      const container = this.$refs.chatContainer
-      if (container) {
-        container.scrollTop = container.scrollHeight
-      }
-    },
-    formatTime(time) {
-      return new Date(time).toLocaleTimeString('zh-CN', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    },
-    formatDuration(seconds) {
-      const m = Math.floor(seconds / 60)
-      const s = seconds % 60
-      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-    },
     endInterview() {
-      if (this.sessionEnded) return
-      
-      this.$confirm('确定要结束问答吗？', '提示', {
+      this.$confirm('确定要结束本次对话吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.doEndInterview()
+        this.$http.post(`/interview/end/${this.currentSessionId}`).then(() => {
+          this.$message.success('对话已结束')
+          this.sessionStarted = false
+          this.currentSessionId = null
+          this.messages = []
+          this.loadHistory()
+        }).catch(() => {
+          this.$message.error('结束对话失败')
+        })
       }).catch(() => {})
     },
-    autoEndInterview() {
-      if (this.sessionEnded) return
-      this.doEndInterview()
+    loadSession(session) {
+      this.currentSessionId = session.id
+      this.currentPosition = session.position || 'AI问答'
+      this.sessionStarted = true
+      this.viewingHistory = true
+      this.messages = []
+      this.$http.get(`/interview/session/${session.id}`).then(res => {
+        if (res.data && res.data.conversation) {
+          try {
+            const parsed = JSON.parse(res.data.conversation)
+            if (Array.isArray(parsed)) {
+              this.messages = parsed
+            }
+          } catch (e) {
+            this.messages = []
+          }
+        }
+      }).catch(() => {})
     },
-    doEndInterview() {
-      if (this.sessionEnded) return
-      this.sessionEnded = true
-      
-      // 停止计时器
-      if (this.interviewTimer) {
-        clearInterval(this.interviewTimer)
-        this.interviewTimer = null
-      }
-      
-      // 根据问答数量和时长计算分数
-      const baseScore = 60
-      const questionBonus = Math.min(this.questionCount * 3, 20)
-      const durationBonus = Math.min(Math.floor(this.interviewDuration / 60) * 2, 10)
-      const randomBonus = Math.floor(Math.random() * 10)
-      const score = Math.min(baseScore + questionBonus + durationBonus + randomBonus, 100)
-      
-      const feedback = this.generateFeedback(score)
-
-      this.$http.post(`/interview/end/${this.sessionId}`, {
-        conversation: JSON.stringify(this.messages),
-        score: score,
-        feedback: feedback,
-        duration: Math.floor(this.interviewDuration / 60),
-        questionCount: this.questionCount
-      }).then(() => {
-        this.$message.success(`问答结束！您的得分: ${score}分`)
-        
-        // 发送问答完成事件
-        this.$bus.$emit(this.$events.INTERVIEW_COMPLETED, {
-          score,
-          questionCount: this.questionCount,
-          duration: this.interviewDuration
-        })
-        
-        this.$router.push('/home/records')
-      }).catch(() => {
-        this.sessionEnded = false // 允许重试
-        this.$message.error('保存问答记录失败')
+    closeHistory() {
+      this.sessionStarted = false
+      this.viewingHistory = false
+      this.currentSessionId = null
+      this.messages = []
+    },
+    addMessage(type, content) {
+      this.messages.push({ type, content, time: new Date() })
+      this.$nextTick(() => {
+        const c = this.$refs.chatContainer
+        if (c) c.scrollTop = c.scrollHeight
       })
     },
-    generateFeedback(score) {
-      if (score >= 85) {
-        return '表现优秀！回答问题思路清晰，专业知识扎实，沟通能力强。'
-      } else if (score >= 70) {
-        return '表现良好。基本能够回答问题，但在某些专业知识点上还需要加强。'
-      } else {
-        return '需要继续努力。建议加强专业知识学习，多做问答练习。'
-      }
-    }
-  },
-  beforeDestroy() {
-    // 清理计时器
-    if (this.interviewTimer) {
-      clearInterval(this.interviewTimer)
-      this.interviewTimer = null
+    formatTime(time) {
+      return new Date(time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return ''
+      const d = new Date(dateStr)
+      return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
     }
   }
 }
 </script>
 
 <style scoped>
-/* 现代化 Interview 页面 - 支持浅色/深色主题 */
-.interview {
-  padding: 0;
-  max-width: 900px;
-  margin: 0 auto;
-  animation: fadeInUp 0.4s ease;
-}
-
-/* 卡片样式 */
-/deep/ .el-card {
-  background: var(--lc-bg-card) !important;
-  border: 1px solid var(--lc-border) !important;
+/* 新布局：左侧历史 + 右侧对话 */
+.interview-layout {
+  display: flex;
+  height: calc(100vh - 120px);
+  gap: 0;
+  background: var(--lc-bg-primary);
   border-radius: var(--lc-radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--lc-border);
 }
 
-/deep/ .el-card h2 {
-  color: var(--lc-text-primary);
-  font-size: 24px;
-  margin-bottom: 12px;
-}
-
-/deep/ .el-card p {
-  color: var(--lc-text-secondary);
-}
-
-/* 表单样式 */
-/deep/ .el-form-item__label {
-  color: var(--lc-text-secondary);
-}
-
-/deep/ .el-select .el-input__inner {
-  background: var(--lc-bg-input);
-  border-color: var(--lc-border);
-  color: var(--lc-text-primary);
-}
-
-/deep/ .el-select-dropdown {
+/* 左侧历史面板 */
+.history-panel {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--lc-border);
   background: var(--lc-bg-card);
-  border-color: var(--lc-border);
+  display: flex;
+  flex-direction: column;
 }
 
-/deep/ .el-select-dropdown__item {
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--lc-border);
+}
+
+.history-title {
+  font-weight: 600;
+  font-size: 14px;
   color: var(--lc-text-primary);
 }
 
-/deep/ .el-select-dropdown__item.hover,
-/deep/ .el-select-dropdown__item:hover {
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.history-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--lc-text-muted);
+}
+
+.history-empty {
+  text-align: center;
+  padding: 30px 10px;
+  color: var(--lc-text-muted);
+  font-size: 13px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--lc-radius-lg);
+  cursor: pointer;
+  transition: background var(--lc-transition);
+}
+
+.history-item:hover {
   background: var(--lc-bg-hover);
+}
+
+.history-item.active {
+  background: var(--lc-primary-bg, rgba(255, 107, 0, 0.1));
+}
+
+.history-item-icon {
+  color: var(--lc-primary);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.history-item-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.history-item-title {
+  font-size: 13px;
+  color: var(--lc-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-date {
+  font-size: 11px;
+  color: var(--lc-text-muted);
+  margin-top: 2px;
+}
+
+/* 右侧对话面板 */
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 欢迎页 */
+.chat-welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+}
+
+.welcome-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--lc-gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #fff;
+}
+
+.chat-welcome h2 {
+  margin: 0;
+  font-size: 22px;
+  color: var(--lc-text-primary);
+}
+
+.chat-welcome p {
+  margin: 0;
+  color: var(--lc-text-muted);
+}
+
+/* 对话主区域 */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .chat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--lc-border);
+  background: var(--lc-bg-card);
+  flex-shrink: 0;
 }
 
-.chat-header h3 {
+.chat-title {
+  font-weight: 600;
+  font-size: 15px;
   color: var(--lc-text-primary);
-  font-size: 18px;
-  margin: 0;
-}
-
-.interview-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.interview-info /deep/ .el-tag {
-  background: var(--lc-bg-tertiary);
-  border-color: var(--lc-border);
-  color: var(--lc-text-secondary);
-}
-
-.interview-info /deep/ .el-tag--success {
-  background: var(--lc-success-bg);
-  border-color: transparent;
-  color: var(--lc-success);
+  gap: 8px;
 }
 
 .chat-container {
-  height: 500px;
+  flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px 24px;
   background: var(--lc-bg-primary);
-  border-radius: var(--lc-radius-lg);
-  margin-bottom: 20px;
-  border: 1px solid var(--lc-border);
+}
+
+.chat-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--lc-text-muted);
+  gap: 12px;
+  font-size: 13px;
+}
+
+.chat-placeholder i {
+  font-size: 40px;
+  opacity: 0.4;
 }
 
 .message {
   display: flex;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .user-message {
@@ -356,26 +478,25 @@ export default {
 }
 
 .message-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--lc-radius-lg);
   background: var(--lc-gradient-purple);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
 }
 
 .user-message .message-avatar {
   background: var(--lc-gradient-primary);
-  color: var(--lc-text-inverse);
 }
 
 .message-content {
-  margin: 0 12px;
-  max-width: 70%;
+  margin: 0 10px;
+  max-width: 72%;
 }
 
 .user-message .message-content {
@@ -385,30 +506,59 @@ export default {
 }
 
 .message-bubble {
-  padding: 14px 18px;
+  padding: 12px 16px;
   border-radius: var(--lc-radius-xl);
   background: var(--lc-bg-card);
   color: var(--lc-text-primary);
   line-height: 1.7;
   word-break: break-word;
   border: 1px solid var(--lc-border);
+  font-size: 14px;
 }
 
 .user-message .message-bubble {
   background: var(--lc-gradient-primary);
-  color: var(--lc-text-inverse);
+  color: #fff;
   border: none;
 }
 
 .message-time {
   font-size: 11px;
   color: var(--lc-text-muted);
-  margin-top: 6px;
+  margin-top: 5px;
+}
+
+/* 打字中动画 */
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 18px;
+}
+
+.typing span {
+  width: 8px;
+  height: 8px;
+  background: var(--lc-text-muted);
+  border-radius: 50%;
+  animation: typing-bounce 1.2s infinite;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
 }
 
 .chat-input {
   display: flex;
-  gap: 12px;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--lc-border);
+  background: var(--lc-bg-card);
+  flex-shrink: 0;
 }
 
 .chat-input /deep/ .el-input__inner {
@@ -416,33 +566,22 @@ export default {
   border: 1px solid var(--lc-border);
   color: var(--lc-text-primary);
   border-radius: var(--lc-radius-lg);
-  height: 48px;
+  height: 44px;
 }
 
 .chat-input /deep/ .el-input__inner:focus {
   border-color: var(--lc-primary);
 }
 
-.chat-input /deep/ .el-button--primary {
-  background: var(--lc-gradient-primary);
-  border: none;
-  color: var(--lc-text-inverse);
-  font-weight: 600;
-  border-radius: var(--lc-radius-lg);
-  height: 48px;
-  padding: 0 24px;
-}
-
-/* 按钮样式 */
 /deep/ .el-button--primary {
   background: var(--lc-gradient-primary);
   border: none;
-  color: var(--lc-text-inverse);
+  color: #fff;
   font-weight: 600;
 }
 
 /deep/ .el-button--danger {
-  background: var(--lc-danger-bg);
+  background: transparent;
   border: 1px solid var(--lc-danger);
   color: var(--lc-danger);
 }
@@ -452,26 +591,13 @@ export default {
   color: #fff;
 }
 
-/deep/ .el-button--default {
-  background: var(--lc-bg-tertiary);
-  border: 1px solid var(--lc-border);
+/deep/ .el-form-item__label {
+  color: var(--lc-text-secondary);
+}
+
+/deep/ .el-select .el-input__inner {
+  background: var(--lc-bg-input);
+  border-color: var(--lc-border);
   color: var(--lc-text-primary);
-}
-
-/deep/ .el-button--default:hover {
-  border-color: var(--lc-primary);
-  color: var(--lc-primary);
-}
-
-/* 动画 */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 </style>

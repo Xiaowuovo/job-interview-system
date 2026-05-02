@@ -17,8 +17,11 @@ public class QuestionFavorite {
     @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
-    private Long questionId;
+    private Long questionId; // 题目ID（题目类型时使用）
+
+    private String type; // 收藏类型：question, knowledge, tutorial
+
+    private Long itemId; // 通用ID，与type配合使用
 
     private String notes; // 收藏时的备注
 
@@ -53,6 +56,22 @@ public class QuestionFavorite {
 
     public void setQuestionId(Long questionId) {
         this.questionId = questionId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Long getItemId() {
+        return itemId;
+    }
+
+    public void setItemId(Long itemId) {
+        this.itemId = itemId;
     }
 
     public String getNotes() {

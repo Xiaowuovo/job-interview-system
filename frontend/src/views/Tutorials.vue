@@ -32,12 +32,20 @@
 
       <el-row :gutter="20">
         <el-col :span="8" v-for="tutorial in filteredTutorials" :key="tutorial.id">
-          <el-card class="tutorial-card" @click.native="viewDetail(tutorial.id)">
-            <h3>{{ tutorial.title }}</h3>
-            <p class="tutorial-preview">{{ tutorial.content.substring(0, 100) }}...</p>
+          <el-card class="tutorial-card">
+            <h3 @click="viewDetail(tutorial.id)" style="cursor:pointer;">{{ tutorial.title }}</h3>
+            <p class="tutorial-preview" @click="viewDetail(tutorial.id)" style="cursor:pointer;">{{ tutorial.content.substring(0, 100) }}...</p>
             <div class="tutorial-meta">
               <el-tag size="small">{{ tutorial.category }}</el-tag>
               <span><i class="el-icon-view"></i> {{ tutorial.viewCount }}</span>
+              <el-button
+                :type="isTutorialFavorited(tutorial.id) ? 'warning' : 'default'"
+                :icon="isTutorialFavorited(tutorial.id) ? 'el-icon-star-on' : 'el-icon-star-off'"
+                size="mini"
+                circle
+                style="margin-left: auto;"
+                @click.stop="toggleTutorialFavorite(tutorial)">
+              </el-button>
             </div>
           </el-card>
         </el-col>
@@ -74,9 +82,10 @@ export default {
   data() {
     return {
       tutorials: [],
-      allTutorials: [], // 保存所有教程
+      allTutorials: [],
       activeCategory: 'all',
       searchKeyword: '',
+      favoritedTutorialIds: new Set(),
       dialogVisible: false,
       form: {
         title: '',
@@ -104,8 +113,41 @@ export default {
   },
   created() {
     this.loadTutorials()
+    this.loadFavoritedTutorials()
   },
   methods: {
+    loadFavoritedTutorials() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      this.$http.get(`/favorites/user/${user.id}`).then(res => {
+        if (res.data) {
+          const ids = res.data
+            .filter(f => f.type === 'tutorial' && f.itemId)
+            .map(f => f.itemId)
+          this.favoritedTutorialIds = new Set(ids)
+        }
+      }).catch(() => {})
+    },
+    isTutorialFavorited(id) {
+      return this.favoritedTutorialIds.has(id)
+    },
+    toggleTutorialFavorite(tutorial) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      if (this.isTutorialFavorited(tutorial.id)) {
+        this.$http.delete(`/favorites/remove?userId=${user.id}&type=tutorial&itemId=${tutorial.id}`)
+          .then(() => {
+            this.favoritedTutorialIds.delete(tutorial.id)
+            this.favoritedTutorialIds = new Set(this.favoritedTutorialIds)
+            this.$message.success('已取消收藏')
+          }).catch(() => {})
+      } else {
+        this.$http.post('/favorites/add', { userId: user.id, type: 'tutorial', itemId: tutorial.id })
+          .then(() => {
+            this.favoritedTutorialIds.add(tutorial.id)
+            this.favoritedTutorialIds = new Set(this.favoritedTutorialIds)
+            this.$message.success('收藏成功')
+          }).catch(() => {})
+      }
+    },
     loadTutorials() {
       this.$http.get('/tutorials').then(res => {
         if (res.data) {

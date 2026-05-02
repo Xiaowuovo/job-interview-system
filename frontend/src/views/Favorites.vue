@@ -183,18 +183,12 @@ export default {
       this.loading = true
       this.$http.get(`/favorites/user/${this.user.id}`).then(res => {
         if (res.data) {
-          // 为每个收藏项添加type字段（如果后端没有提供）
           this.favorites = res.data.map(item => {
             if (!item.type) {
-              // 根据字段判断类型
               if (item.questionId) item.type = 'question'
-              else if (item.tutorialId) item.type = 'tutorial'
-              else if (item.knowledgeId) item.type = 'knowledge'
-              else if (item.wrongQuestionId) item.type = 'wrong'
             }
             return item
           })
-          // 加载每个收藏的详情
           this.loadItemDetails()
         }
       }).finally(() => {
@@ -203,37 +197,19 @@ export default {
     },
     loadItemDetails() {
       this.favorites.forEach(favorite => {
-        if (favorite.questionId) {
-          this.$http.get(`/questions/${favorite.questionId}`).then(res => {
-            if (res.data) {
-              this.$set(favorite, 'question', res.data)
-            }
+        const type = favorite.type
+        const itemId = favorite.itemId || favorite.questionId
+        if (type === 'question' && itemId) {
+          this.$http.get(`/questions/${itemId}`).then(res => {
+            if (res.data) this.$set(favorite, 'question', res.data)
           }).catch(() => {})
-        } else if (favorite.tutorialId) {
-          this.$http.get(`/tutorials/${favorite.tutorialId}`).then(res => {
-            if (res.data) {
-              this.$set(favorite, 'tutorial', res.data)
-            }
+        } else if (type === 'tutorial' && itemId) {
+          this.$http.get(`/tutorials/${itemId}`).then(res => {
+            if (res.data) this.$set(favorite, 'tutorial', res.data)
           }).catch(() => {})
-        } else if (favorite.knowledgeId) {
-          this.$http.get(`/knowledge/${favorite.knowledgeId}`).then(res => {
-            if (res.data) {
-              this.$set(favorite, 'knowledge', res.data)
-            }
-          }).catch(() => {})
-        } else if (favorite.wrongQuestionId) {
-          this.$http.get(`/wrong-questions/${favorite.wrongQuestionId}`).then(res => {
-            if (res.data) {
-              this.$set(favorite, 'wrongQuestion', res.data)
-              // 加载错题对应的题目
-              if (res.data.questionId) {
-                this.$http.get(`/questions/${res.data.questionId}`).then(qRes => {
-                  if (qRes.data) {
-                    this.$set(favorite, 'question', qRes.data)
-                  }
-                }).catch(() => {})
-              }
-            }
+        } else if (type === 'knowledge' && itemId) {
+          this.$http.get(`/knowledge/${itemId}`).then(res => {
+            if (res.data) this.$set(favorite, 'knowledge', res.data)
           }).catch(() => {})
         }
       })
@@ -344,17 +320,15 @@ export default {
       return types[type] || 'info'
     },
     getItemTitle(item) {
-      if (item.question) return item.question.title
-      if (item.tutorial) return item.tutorial.title
-      if (item.knowledge) return item.knowledge.title
-      if (item.wrongQuestion && item.wrongQuestion.question) return item.wrongQuestion.question.title
+      if (item.question) return item.question.content || item.question.title || '题目'
+      if (item.tutorial) return item.tutorial.title || '教程'
+      if (item.knowledge) return item.knowledge.title || '知识点'
       return '加载中...'
     },
     getItemCategory(item) {
-      if (item.question) return item.question.category
-      if (item.tutorial) return item.tutorial.category
-      if (item.knowledge) return item.knowledge.category
-      if (item.wrongQuestion && item.wrongQuestion.question) return item.wrongQuestion.question.category
+      if (item.question) return item.question.category || '-'
+      if (item.tutorial) return item.tutorial.category || '-'
+      if (item.knowledge) return item.knowledge.category || '-'
       return '-'
     }
   }

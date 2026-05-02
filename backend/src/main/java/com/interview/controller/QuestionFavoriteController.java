@@ -21,28 +21,51 @@ public class QuestionFavoriteController {
     private final QuestionFavoriteService favoriteService;
 
     /**
-     * 添加收藏
+     * 添加收藏（支持题目/知识点/教程多种类型）
      */
     @PostMapping("/add")
     public Result<QuestionFavorite> addFavorite(@RequestBody Map<String, Object> params) {
         Long userId = Long.valueOf(params.get("userId").toString());
-        Long questionId = Long.valueOf(params.get("questionId").toString());
         String notes = params.get("notes") != null ? params.get("notes").toString() : null;
+        String type = params.get("type") != null ? params.get("type").toString() : "question";
 
-        QuestionFavorite favorite = favoriteService.addFavorite(userId, questionId, notes);
-        return Result.success(favorite);
+        if ("question".equals(type) && params.get("questionId") != null) {
+            Long questionId = Long.valueOf(params.get("questionId").toString());
+            QuestionFavorite fav = favoriteService.addFavorite(userId, questionId, notes);
+            if (fav.getType() == null) { fav.setType("question"); fav.setItemId(questionId); }
+            return Result.success(fav);
+        } else {
+            Long itemId = Long.valueOf(params.get("itemId").toString());
+            QuestionFavorite fav = favoriteService.addFavoriteByType(userId, type, itemId, notes);
+            return Result.success(fav);
+        }
     }
 
     /**
-     * 取消收藏
+     * 取消收藏（题目）
      */
     @DeleteMapping("/remove")
-    public Result<Void> removeFavorite(@RequestParam Long userId, @RequestParam Long questionId) {
-        boolean removed = favoriteService.removeFavorite(userId, questionId);
-        if (removed) {
-            return Result.success(null);
+    public Result<Void> removeFavorite(@RequestParam Long userId,
+                                       @RequestParam(required = false) Long questionId,
+                                       @RequestParam(required = false) String type,
+                                       @RequestParam(required = false) Long itemId) {
+        if (questionId != null) {
+            favoriteService.removeFavorite(userId, questionId);
+        } else if (type != null && itemId != null) {
+            favoriteService.removeFavoriteByType(userId, type, itemId);
         }
-        return Result.error("取消收藏失败");
+        return Result.success(null);
+    }
+
+    /**
+     * 检查通用类型是否已收藏
+     */
+    @GetMapping("/check-type")
+    public Result<Boolean> isFavoritedByType(@RequestParam Long userId,
+                                              @RequestParam String type,
+                                              @RequestParam Long itemId) {
+        boolean favorited = favoriteService.isFavoritedByType(userId, type, itemId);
+        return Result.success(favorited);
     }
 
     /**

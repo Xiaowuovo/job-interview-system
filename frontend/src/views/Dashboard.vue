@@ -210,7 +210,7 @@ export default {
           value: this.stats.knowledgeCount,
           icon: 'el-icon-notebook-2',
           color: '#409EFF',
-          trend: 12,
+          trend: null,
           route: '/home/knowledge'
         },
         {
@@ -218,7 +218,7 @@ export default {
           value: this.stats.questionCount,
           icon: 'el-icon-edit',
           color: '#67C23A',
-          trend: 8,
+          trend: null,
           route: '/home/practice'
         },
         {
@@ -226,7 +226,7 @@ export default {
           value: this.stats.wrongQuestionCount,
           icon: 'el-icon-warning-outline',
           color: '#E6A23C',
-          trend: -15,
+          trend: null,
           route: '/home/wrong-questions'
         },
         {
@@ -234,7 +234,7 @@ export default {
           value: this.stats.avgScore + '%',
           icon: 'el-icon-trophy',
           color: '#F56C6C',
-          trend: 5,
+          trend: null,
           route: '/home/ability'
         }
       ]
