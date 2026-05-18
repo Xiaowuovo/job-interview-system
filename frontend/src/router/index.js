@@ -106,6 +106,12 @@ const routes = [
         name: 'TeacherKnowledgeManage',
         component: () => import('@/views/teacher/KnowledgeManage.vue'),
         meta: { requiresTeacher: true }
+      },
+      {
+        path: 'teacher/classes',
+        name: 'TeacherClassManage',
+        component: () => import('@/views/teacher/ClassManage.vue'),
+        meta: { requiresTeacher: true }
       }
     ]
   }
@@ -144,6 +150,11 @@ router.beforeEach((to, from, next) => {
     // 检查教师权限
     if (to.meta.requiresTeacher && user.role !== 'TEACHER') {
       next('/home/dashboard')
+      return
+    }
+    // 教师访问学生专属页面时重定向
+    if (user.role === 'TEACHER' && (to.path === '/home/dashboard' || to.path === '/home')) {
+      next('/home/teacher/questions')
       return
     }
   } catch (e) {

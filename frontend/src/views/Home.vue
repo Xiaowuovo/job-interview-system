@@ -12,54 +12,56 @@
       </div>
       
       <nav class="lc-nav">
-        <div class="nav-section">
-          <div class="nav-section-title" v-show="!sidebarCollapsed">学习</div>
-          <router-link to="/home/dashboard" class="nav-item" :class="{ active: $route.path === '/home/dashboard' }">
-            <i class="el-icon-s-home"></i>
-            <span v-show="!sidebarCollapsed">仪表盘</span>
-          </router-link>
-          <router-link to="/home/tutorials" class="nav-item" :class="{ active: $route.path === '/home/tutorials' }">
-            <i class="el-icon-reading"></i>
-            <span v-show="!sidebarCollapsed">面试教程</span>
-          </router-link>
-          <router-link to="/home/knowledge" class="nav-item" :class="{ active: $route.path === '/home/knowledge' }">
-            <i class="el-icon-notebook-2"></i>
-            <span v-show="!sidebarCollapsed">知识库</span>
-          </router-link>
-        </div>
-        
-        <div class="nav-section">
-          <div class="nav-section-title" v-show="!sidebarCollapsed">练习</div>
-          <router-link to="/home/practice" class="nav-item" :class="{ active: $route.path.includes('/home/practice') || $route.path.includes('/home/test') }">
-            <i class="el-icon-edit-outline"></i>
-            <span v-show="!sidebarCollapsed">题目练习</span>
-          </router-link>
-          <router-link to="/home/interview" class="nav-item" :class="{ active: $route.path === '/home/interview' }">
-            <i class="el-icon-microphone"></i>
-            <span v-show="!sidebarCollapsed">AI模拟问答</span>
-            <span class="nav-badge" v-show="!sidebarCollapsed">AI</span>
-          </router-link>
-          <router-link to="/home/wrong-questions" class="nav-item" :class="{ active: $route.path === '/home/wrong-questions' }">
-            <i class="el-icon-warning-outline"></i>
-            <span v-show="!sidebarCollapsed">错题本</span>
-          </router-link>
-          <router-link to="/home/favorites" class="nav-item" :class="{ active: $route.path === '/home/favorites' }">
-            <i class="el-icon-star-off"></i>
-            <span v-show="!sidebarCollapsed">收藏夹</span>
-          </router-link>
-        </div>
-        
-        <div class="nav-section">
-          <div class="nav-section-title" v-show="!sidebarCollapsed">分析</div>
-          <router-link to="/home/study-report" class="nav-item" :class="{ active: $route.path === '/home/study-report' }">
-            <i class="el-icon-s-marketing"></i>
-            <span v-show="!sidebarCollapsed">学习报告</span>
-          </router-link>
-          <router-link to="/home/records" class="nav-item" :class="{ active: $route.path === '/home/records' }">
-            <i class="el-icon-document"></i>
-            <span v-show="!sidebarCollapsed">成绩记录</span>
-          </router-link>
-        </div>
+        <template v-if="!isTeacher">
+          <div class="nav-section">
+            <div class="nav-section-title" v-show="!sidebarCollapsed">学习</div>
+            <router-link to="/home/dashboard" class="nav-item" :class="{ active: $route.path === '/home/dashboard' }">
+              <i class="el-icon-s-home"></i>
+              <span v-show="!sidebarCollapsed">仪表盘</span>
+            </router-link>
+            <router-link to="/home/tutorials" class="nav-item" :class="{ active: $route.path === '/home/tutorials' }">
+              <i class="el-icon-reading"></i>
+              <span v-show="!sidebarCollapsed">面试教程</span>
+            </router-link>
+            <router-link to="/home/knowledge" class="nav-item" :class="{ active: $route.path === '/home/knowledge' }">
+              <i class="el-icon-notebook-2"></i>
+              <span v-show="!sidebarCollapsed">知识库</span>
+            </router-link>
+          </div>
+          
+          <div class="nav-section">
+            <div class="nav-section-title" v-show="!sidebarCollapsed">练习</div>
+            <router-link to="/home/practice" class="nav-item" :class="{ active: $route.path.includes('/home/practice') || $route.path.includes('/home/test') }">
+              <i class="el-icon-edit-outline"></i>
+              <span v-show="!sidebarCollapsed">题目练习</span>
+            </router-link>
+            <router-link to="/home/interview" class="nav-item" :class="{ active: $route.path === '/home/interview' }">
+              <i class="el-icon-microphone"></i>
+              <span v-show="!sidebarCollapsed">AI模拟问答</span>
+              <span class="nav-badge" v-show="!sidebarCollapsed">AI</span>
+            </router-link>
+            <router-link to="/home/wrong-questions" class="nav-item" :class="{ active: $route.path === '/home/wrong-questions' }">
+              <i class="el-icon-warning-outline"></i>
+              <span v-show="!sidebarCollapsed">错题本</span>
+            </router-link>
+            <router-link to="/home/favorites" class="nav-item" :class="{ active: $route.path === '/home/favorites' }">
+              <i class="el-icon-star-off"></i>
+              <span v-show="!sidebarCollapsed">收藏夹</span>
+            </router-link>
+          </div>
+          
+          <div class="nav-section">
+            <div class="nav-section-title" v-show="!sidebarCollapsed">分析</div>
+            <router-link to="/home/study-report" class="nav-item" :class="{ active: $route.path === '/home/study-report' }">
+              <i class="el-icon-s-marketing"></i>
+              <span v-show="!sidebarCollapsed">学习报告</span>
+            </router-link>
+            <router-link to="/home/records" class="nav-item" :class="{ active: $route.path === '/home/records' }">
+              <i class="el-icon-document"></i>
+              <span v-show="!sidebarCollapsed">成绩记录</span>
+            </router-link>
+          </div>
+        </template>
 
         <!-- 教师端菜单 -->
         <div class="nav-section" v-if="isTeacher">
@@ -78,6 +80,10 @@
           <router-link to="/home/teacher/knowledge" class="nav-item" :class="{ active: $route.path === '/home/teacher/knowledge' }">
             <i class="el-icon-notebook-2"></i>
             <span v-show="!sidebarCollapsed">知识点管理</span>
+          </router-link>
+          <router-link to="/home/teacher/classes" class="nav-item" :class="{ active: $route.path === '/home/teacher/classes' }">
+            <i class="el-icon-s-custom"></i>
+            <span v-show="!sidebarCollapsed">班级管理</span>
           </router-link>
         </div>
       </nav>
@@ -201,7 +207,11 @@ export default {
         '/home/favorites': '收藏夹',
         '/home/study-report': '学习报告',
         '/home/records': '成绩记录',
-        '/home/profile': '个人中心'
+        '/home/profile': '个人中心',
+        '/home/teacher/questions': '题目管理',
+        '/home/teacher/tutorials': '教程管理',
+        '/home/teacher/knowledge': '知识点管理',
+        '/home/teacher/classes': '班级管理'
       }
       return titles[this.$route.path] || this.$route.name || '首页'
     },

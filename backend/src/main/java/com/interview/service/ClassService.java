@@ -185,6 +185,14 @@ public class ClassService {
     }
 
     /**
+     * 通过邀请码获取班级
+     */
+    public ClassInfo getClassByCode(String classCode) {
+        return classRepository.findByClassCode(classCode)
+            .orElseThrow(() -> new RuntimeException("班级不存在"));
+    }
+
+    /**
      * 获取教师的班级列表
      */
     public List<ClassInfo> getTeacherClasses(Long teacherId) {

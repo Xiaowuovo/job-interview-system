@@ -73,6 +73,41 @@
           </el-row>
         </el-card>
 
+        <!-- 班级信息 -->
+        <el-card shadow="hover" class="class-info-card" style="margin-top: 20px;">
+          <div slot="header" class="clearfix">
+            <span class="card-title"><i class="el-icon-s-custom"></i> 我的班级</span>
+            <el-button type="primary" size="small" style="float:right;" @click="joinDialogVisible = true">
+              <i class="el-icon-plus"></i> 加入班级
+            </el-button>
+          </div>
+          <div v-if="myClasses.length === 0" class="empty-records">
+            <i class="el-icon-s-custom"></i>
+            <p>暂未加入任何班级，可凭邀请码加入</p>
+          </div>
+          <div v-for="cls in myClasses" :key="cls.classId" class="class-item">
+            <div class="class-item-left">
+              <div class="class-item-name">{{ cls.className }}</div>
+              <div class="class-item-desc">{{ cls.description || '暂无描述' }}</div>
+              <div class="class-item-meta">
+                <el-tag size="mini" :type="cls.status === 'ACTIVE' ? 'success' : 'info'">{{ cls.status === 'ACTIVE' ? '进行中' : '已结束' }}</el-tag>
+                <span style="margin-left:8px; color:var(--lc-text-muted); font-size:12px;">{{ cls.studentCount }} 人</span>
+                <span style="margin-left:8px; color:var(--lc-text-muted); font-size:12px;">加入于 {{ formatDate(cls.joinTime) }}</span>
+              </div>
+            </div>
+            <el-button size="small" type="danger" plain @click="leaveClass(cls)">退出</el-button>
+          </div>
+        </el-card>
+
+        <!-- 加入班级对话框 -->
+        <el-dialog title="加入班级" :visible.sync="joinDialogVisible" width="380px" :close-on-click-modal="false">
+          <el-input v-model="joinCode" placeholder="请输入8位邀请码" maxlength="8" style="text-transform:uppercase;"></el-input>
+          <span slot="footer">
+            <el-button @click="joinDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="doJoinClass" :loading="joining">加入</el-button>
+          </span>
+        </el-dialog>
+
         <!-- 积分记录 -->
         <el-card shadow="hover" class="points-card" style="margin-top: 20px;">
           <div slot="header" class="clearfix">
@@ -209,13 +244,18 @@ export default {
         ]
       },
       learningStats: [],
-      pointsRecords: []
+      pointsRecords: [],
+      myClasses: [],
+      joinDialogVisible: false,
+      joinCode: '',
+      joining: false
     }
   },
   mounted() {
     this.loadUserInfo()
     this.loadStatistics()
     this.loadPointsRecords()
+    this.loadMyClasses()
   },
   methods: {
     loadUserInfo() {
@@ -232,6 +272,39 @@ export default {
             targetPosition: this.userInfo.targetPosition || ''
           }
         }
+      }).catch(() => {})
+    },
+    loadMyClasses() {
+      this.$http.get(`/classes/student/${this.userInfo.id}`).then(res => {
+        this.myClasses = Array.isArray(res.data) ? res.data : []
+      }).catch(() => { this.myClasses = [] })
+    },
+    doJoinClass() {
+      if (!this.joinCode.trim()) {
+        this.$message.warning('请输入邀请码')
+        return
+      }
+      this.joining = true
+      this.$http.post('/classes/join', {
+        classCode: this.joinCode.trim().toUpperCase(),
+        studentId: this.userInfo.id
+      }).then(() => {
+        this.$message.success('加入成功')
+        this.joinDialogVisible = false
+        this.joinCode = ''
+        this.loadMyClasses()
+      }).catch(err => {
+        this.$message.error(err.message || '加入失败，请检查邀请码')
+      }).finally(() => { this.joining = false })
+    },
+    leaveClass(cls) {
+      this.$confirm(`确定退出班级"${cls.className}"吗？`, '提示', {
+        confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+      }).then(() => {
+        this.$http.post(`/classes/${cls.classId}/leave`, { studentId: this.userInfo.id }).then(() => {
+          this.$message.success('已退出班级')
+          this.loadMyClasses()
+        })
       }).catch(() => {})
     },
     loadPointsRecords() {
@@ -520,6 +593,51 @@ export default {
 .points-card .empty-records i {
   font-size: 48px;
   margin-bottom: 10px;
+}
+
+/* 班级信息 */
+.class-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--lc-border);
+}
+
+.class-item:last-child { border-bottom: none; }
+
+.class-item-left { flex: 1; margin-right: 12px; }
+
+.class-item-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--lc-text-primary);
+  margin-bottom: 4px;
+}
+
+.class-item-desc {
+  font-size: 13px;
+  color: var(--lc-text-muted);
+  margin-bottom: 6px;
+}
+
+.class-item-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.class-info-card .empty-records {
+  text-align: center;
+  padding: 30px 0;
+  color: var(--lc-text-muted);
+}
+
+.class-info-card .empty-records i {
+  font-size: 40px;
+  margin-bottom: 8px;
+  display: block;
 }
 
 /* 表格样式 */
