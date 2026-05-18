@@ -106,7 +106,8 @@ export default {
               if (res.code === 200) {
                 this.$setCurrentUser(res.data)
                 this.$message.success('登录成功')
-                this.$router.push('/home/dashboard')
+                const dest = res.data.role === 'TEACHER' ? '/home/teacher/questions' : '/home/dashboard'
+                this.$router.push(dest)
               }
             })
             .catch(err => {

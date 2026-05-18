@@ -152,8 +152,8 @@ router.beforeEach((to, from, next) => {
       next('/home/dashboard')
       return
     }
-    // 教师访问学生专属页面时重定向
-    if (user.role === 'TEACHER' && (to.path === '/home/dashboard' || to.path === '/home')) {
+    // 教师直接访问 /home 时重定向到教师首页
+    if (user.role === 'TEACHER' && to.path === '/home') {
       next('/home/teacher/questions')
       return
     }
