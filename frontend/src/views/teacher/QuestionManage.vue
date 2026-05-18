@@ -236,6 +236,7 @@ export default {
         category: '',
         difficulty: ''
       },
+      allQuestions: [],
       questions: [],
       loading: false,
       currentPage: 1,
@@ -275,37 +276,39 @@ export default {
   methods: {
     loadQuestions() {
       this.loading = true
-      const params = {
-        teacherId: this.user.id,
-        page: this.currentPage - 1,
-        size: this.pageSize,
-        ...this.searchForm
-      }
-      
-      this.$http.get('/questions', { params }).then(res => {
-        if (res.data && Array.isArray(res.data.content)) {
-          this.questions = res.data.content
-          this.total = res.data.totalElements || res.data.content.length
-        } else if (Array.isArray(res.data)) {
-          this.questions = res.data
-          this.total = res.data.length
+      this.$http.get('/questions').then(res => {
+        if (Array.isArray(res.data)) {
+          this.allQuestions = res.data
         }
+        this.applyFilter()
         this.loading = false
       }).catch(() => {
         this.loading = false
       })
     },
+    applyFilter() {
+      let filtered = this.allQuestions
+      if (this.searchForm.type) {
+        filtered = filtered.filter(q => q.type === this.searchForm.type)
+      }
+      if (this.searchForm.category) {
+        filtered = filtered.filter(q => q.category === this.searchForm.category)
+      }
+      if (this.searchForm.difficulty) {
+        filtered = filtered.filter(q => q.difficulty === this.searchForm.difficulty)
+      }
+      this.total = filtered.length
+      const start = (this.currentPage - 1) * this.pageSize
+      this.questions = filtered.slice(start, start + this.pageSize)
+    },
     searchQuestions() {
       this.currentPage = 1
-      this.loadQuestions()
+      this.applyFilter()
     },
     resetSearch() {
-      this.searchForm = {
-        type: '',
-        category: '',
-        difficulty: ''
-      }
-      this.searchQuestions()
+      this.searchForm = { type: '', category: '', difficulty: '' }
+      this.currentPage = 1
+      this.applyFilter()
     },
     showCreateDialog() {
       this.dialogTitle = '创建题目'
@@ -411,11 +414,11 @@ export default {
     },
     handleSizeChange(val) {
       this.pageSize = val
-      this.loadQuestions()
+      this.applyFilter()
     },
     handleCurrentChange(val) {
       this.currentPage = val
-      this.loadQuestions()
+      this.applyFilter()
     },
     formatType(type) {
       const types = {

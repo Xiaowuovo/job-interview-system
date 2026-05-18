@@ -90,12 +90,6 @@ const routes = [
       },
       // 教师端路由
       {
-        path: 'teacher/dashboard',
-        name: 'TeacherDashboard',
-        component: () => import('@/views/teacher/TeacherDashboard.vue'),
-        meta: { requiresTeacher: true }
-      },
-      {
         path: 'teacher/questions',
         name: 'TeacherQuestionManage',
         component: () => import('@/views/teacher/QuestionManage.vue'),
@@ -105,12 +99,6 @@ const routes = [
         path: 'teacher/tutorials',
         name: 'TeacherTutorialManage',
         component: () => import('@/views/teacher/TutorialManage.vue'),
-        meta: { requiresTeacher: true }
-      },
-      {
-        path: 'teacher/courses',
-        name: 'TeacherCourseManage',
-        component: () => import('@/views/teacher/CourseManage.vue'),
         meta: { requiresTeacher: true }
       },
       {

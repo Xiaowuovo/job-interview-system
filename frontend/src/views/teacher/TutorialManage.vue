@@ -157,6 +157,7 @@ export default {
         category: '',
         keyword: ''
       },
+      allTutorials: [],
       tutorials: [],
       loading: false,
       currentPage: 1,
@@ -190,30 +191,37 @@ export default {
   methods: {
     loadTutorials() {
       this.loading = true
-      const params = {
-        teacherId: this.user.id,
-        ...this.searchForm
-      }
-      
-      this.$http.get('/tutorials', { params }).then(res => {
+      this.$http.get('/tutorials').then(res => {
         if (Array.isArray(res.data)) {
-          this.tutorials = res.data
-          this.total = res.data.length
+          this.allTutorials = res.data
         }
+        this.applyFilter()
         this.loading = false
       }).catch(() => {
         this.loading = false
       })
     },
+    applyFilter() {
+      let filtered = this.allTutorials
+      if (this.searchForm.category) {
+        filtered = filtered.filter(t => t.category === this.searchForm.category)
+      }
+      if (this.searchForm.keyword) {
+        const kw = this.searchForm.keyword.toLowerCase()
+        filtered = filtered.filter(t => t.title && t.title.toLowerCase().includes(kw))
+      }
+      this.total = filtered.length
+      const start = (this.currentPage - 1) * this.pageSize
+      this.tutorials = filtered.slice(start, start + this.pageSize)
+    },
     searchTutorials() {
-      this.loadTutorials()
+      this.currentPage = 1
+      this.applyFilter()
     },
     resetSearch() {
-      this.searchForm = {
-        category: '',
-        keyword: ''
-      }
-      this.loadTutorials()
+      this.searchForm = { category: '', keyword: '' }
+      this.currentPage = 1
+      this.applyFilter()
     },
     showCreateDialog() {
       this.dialogTitle = '创建教程'
@@ -301,11 +309,11 @@ export default {
     },
     handleSizeChange(val) {
       this.pageSize = val
-      this.loadTutorials()
+      this.applyFilter()
     },
     handleCurrentChange(val) {
       this.currentPage = val
-      this.loadTutorials()
+      this.applyFilter()
     },
     getDifficultyType(difficulty) {
       const types = {

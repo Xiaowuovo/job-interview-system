@@ -168,6 +168,7 @@ export default {
         difficulty: '',
         keyword: ''
       },
+      allKnowledge: [],
       knowledgeList: [],
       loading: false,
       currentPage: 1,
@@ -200,30 +201,40 @@ export default {
   methods: {
     loadKnowledge() {
       this.loading = true
-      const params = {
-        ...this.searchForm
-      }
-      
-      this.$http.get('/knowledge', { params }).then(res => {
+      this.$http.get('/knowledge').then(res => {
         if (Array.isArray(res.data)) {
-          this.knowledgeList = res.data.filter(k => k.authorId === this.user.id)
-          this.total = this.knowledgeList.length
+          this.allKnowledge = res.data
         }
+        this.applyFilter()
         this.loading = false
       }).catch(() => {
         this.loading = false
       })
     },
+    applyFilter() {
+      let filtered = this.allKnowledge
+      if (this.searchForm.category) {
+        filtered = filtered.filter(k => k.category === this.searchForm.category)
+      }
+      if (this.searchForm.difficulty) {
+        filtered = filtered.filter(k => k.difficulty === this.searchForm.difficulty)
+      }
+      if (this.searchForm.keyword) {
+        const kw = this.searchForm.keyword.toLowerCase()
+        filtered = filtered.filter(k => k.title && k.title.toLowerCase().includes(kw))
+      }
+      this.total = filtered.length
+      const start = (this.currentPage - 1) * this.pageSize
+      this.knowledgeList = filtered.slice(start, start + this.pageSize)
+    },
     searchKnowledge() {
-      this.loadKnowledge()
+      this.currentPage = 1
+      this.applyFilter()
     },
     resetSearch() {
-      this.searchForm = {
-        category: '',
-        difficulty: '',
-        keyword: ''
-      }
-      this.loadKnowledge()
+      this.searchForm = { category: '', difficulty: '', keyword: '' }
+      this.currentPage = 1
+      this.applyFilter()
     },
     showCreateDialog() {
       this.dialogTitle = '创建知识点'
@@ -311,11 +322,11 @@ export default {
     },
     handleSizeChange(val) {
       this.pageSize = val
-      this.loadKnowledge()
+      this.applyFilter()
     },
     handleCurrentChange(val) {
       this.currentPage = val
-      this.loadKnowledge()
+      this.applyFilter()
     },
     getDifficultyType(difficulty) {
       const types = {

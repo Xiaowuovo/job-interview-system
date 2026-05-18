@@ -38,13 +38,6 @@
               <span class="label">积分：</span>
               <span class="value highlight">{{ userInfo.points || 0 }}</span>
             </div>
-            <div class="info-item" v-if="userInfo.membershipType && userInfo.membershipType !== 'FREE'">
-              <i class="el-icon-medal"></i>
-              <span class="label">会员：</span>
-              <el-tag :type="getMembershipType(userInfo.membershipType)" size="small">
-                {{ getMembershipText(userInfo.membershipType) }}
-              </el-tag>
-            </div>
           </div>
 
           <el-divider></el-divider>
@@ -80,23 +73,6 @@
           </el-row>
         </el-card>
 
-        <!-- 最近活动 -->
-        <el-card shadow="hover" class="activity-card" style="margin-top: 20px;">
-          <div slot="header" class="clearfix">
-            <span class="card-title"><i class="el-icon-time"></i> 最近活动</span>
-          </div>
-          <el-timeline>
-            <el-timeline-item
-              v-for="(activity, index) in recentActivities"
-              :key="index"
-              :timestamp="activity.time"
-              :color="activity.color">
-              <i :class="activity.icon" style="margin-right: 8px;"></i>
-              {{ activity.content }}
-            </el-timeline-item>
-          </el-timeline>
-        </el-card>
-
         <!-- 积分记录 -->
         <el-card shadow="hover" class="points-card" style="margin-top: 20px;">
           <div slot="header" class="clearfix">
@@ -130,26 +106,6 @@
           <div v-if="pointsRecords.length === 0" class="empty-records">
             <i class="el-icon-info"></i>
             <p>暂无积分记录</p>
-          </div>
-        </el-card>
-
-        <!-- 成就徽章 -->
-        <el-card shadow="hover" class="badge-card" style="margin-top: 20px;">
-          <div slot="header" class="clearfix">
-            <span class="card-title"><i class="el-icon-trophy"></i> 成就徽章</span>
-          </div>
-          <div class="badges-grid">
-            <div
-              v-for="(badge, index) in badges"
-              :key="index"
-              class="badge-item"
-              :class="{unlocked: badge.unlocked}">
-              <div class="badge-icon">
-                <i :class="badge.icon"></i>
-              </div>
-              <div class="badge-name">{{ badge.name }}</div>
-              <div class="badge-desc">{{ badge.description }}</div>
-            </div>
           </div>
         </el-card>
       </el-col>
@@ -253,22 +209,12 @@ export default {
         ]
       },
       learningStats: [],
-      recentActivities: [],
-      pointsRecords: [],
-      badges: [
-        { name: '初学者', icon: 'el-icon-star-off', description: '注册账号', unlocked: true },
-        { name: '勤奋者', icon: 'el-icon-trophy', description: '连续学习7天', unlocked: false },
-        { name: '刷题达人', icon: 'el-icon-medal', description: '完成100道题', unlocked: false },
-        { name: '知识探索者', icon: 'el-icon-discover', description: '学习20个知识点', unlocked: false },
-        { name: '面试高手', icon: 'el-icon-user', description: '完成10次模拟面试', unlocked: false },
-        { name: '精益求精', icon: 'el-icon-star-on', description: '清空错题本', unlocked: false }
-      ]
+      pointsRecords: []
     }
   },
   mounted() {
     this.loadUserInfo()
     this.loadStatistics()
-    this.loadActivities()
     this.loadPointsRecords()
   },
   methods: {
@@ -327,80 +273,53 @@ export default {
       return tags[type] || 'info'
     },
     loadStatistics() {
-      // 加载学习统计
       Promise.all([
         this.$http.get(`/knowledge/statistics/${this.userInfo.id}`),
         this.$http.get(`/test-records/statistics/${this.userInfo.id}`),
         this.$http.get(`/wrong-questions/statistics/${this.userInfo.id}`)
       ]).then(([knowledgeRes, testRes, wrongRes]) => {
+        const kd = knowledgeRes.data || {}
+        const td = testRes.data || {}
+        const wd = wrongRes.data || {}
         this.learningStats = [
           {
             label: '已学知识点',
-            value: knowledgeRes.data.data?.totalKnowledgePoints || 0,
+            value: kd.totalKnowledgePoints || 0,
             icon: 'el-icon-notebook-2',
             color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
           },
           {
             label: '练习题数',
-            value: testRes.data.data?.totalQuestions || 0,
+            value: td.totalQuestions || 0,
             icon: 'el-icon-edit',
             color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
           },
           {
             label: '错题数',
-            value: wrongRes.data.data?.totalWrongQuestions || 0,
+            value: wd.totalWrongQuestions || 0,
             icon: 'el-icon-warning',
             color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
           },
           {
             label: '学习时长',
-            value: Math.floor((knowledgeRes.data.data?.totalStudyTime || 0) / 60) + '分钟',
+            value: Math.floor((kd.totalStudyTime || 0) / 60) + '分钟',
             icon: 'el-icon-time',
             color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
           },
           {
             label: '平均分',
-            value: (testRes.data.data?.averageScore || 0).toFixed(1) + '分',
+            value: (td.averageScore || 0).toFixed(1) + '分',
             icon: 'el-icon-trophy',
             color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
           },
           {
             label: '完成率',
-            value: (knowledgeRes.data.data?.completionRate || 0).toFixed(1) + '%',
+            value: (kd.completionRate || 0).toFixed(1) + '%',
             icon: 'el-icon-circle-check',
             color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)'
           }
         ]
-      })
-    },
-    loadActivities() {
-      // 模拟最近活动数据
-      this.recentActivities = [
-        {
-          time: '2小时前',
-          content: '完成了Java集合框架的学习',
-          icon: 'el-icon-success',
-          color: '#67C23A'
-        },
-        {
-          time: '昨天',
-          content: '参加了技术面试模拟',
-          icon: 'el-icon-microphone',
-          color: '#E6A23C'
-        },
-        {
-          time: '2天前',
-          content: '完成了10道算法题',
-          icon: 'el-icon-edit',
-          color: '#409EFF'
-        },
-        {
-          time: '3天前',
-          content: '清空了5道错题',
-          icon: 'el-icon-circle-check',
-          color: '#67C23A'
-        }
-      ]
+      }).catch(() => {})
     },
     saveProfile() {
       this.$refs.editForm.validate(valid => {
@@ -426,20 +345,6 @@ export default {
         'TEACHER': '教师'
       }
       return texts[role] || '用户'
-    },
-    getMembershipType(type) {
-      const types = {
-        'VIP': 'warning',
-        'ENTERPRISE': 'danger'
-      }
-      return types[type] || 'info'
-    },
-    getMembershipText(type) {
-      const texts = {
-        'VIP': 'VIP会员',
-        'ENTERPRISE': '企业会员'
-      }
-      return texts[type] || '普通用户'
     },
     changePassword() {
       this.$refs.passwordForm.validate(valid => {
@@ -602,51 +507,6 @@ export default {
 
 .stat-label {
   font-size: 13px;
-  color: var(--lc-text-muted);
-}
-
-/* 成就徽章 */
-.badges-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.badge-item {
-  text-align: center;
-  padding: 20px;
-  background: var(--lc-bg-tertiary);
-  border-radius: var(--lc-radius-xl);
-  transition: all var(--lc-transition);
-  opacity: 0.5;
-  border: 1px solid var(--lc-border);
-}
-
-.badge-item.unlocked {
-  opacity: 1;
-  background: var(--lc-primary-bg);
-  border-color: var(--lc-primary);
-}
-
-.badge-item.unlocked:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--lc-shadow-primary);
-}
-
-.badge-icon {
-  font-size: 48px;
-  color: var(--lc-primary);
-  margin-bottom: 10px;
-}
-
-.badge-name {
-  font-weight: 600;
-  color: var(--lc-text-primary);
-  margin-bottom: 5px;
-}
-
-.badge-desc {
-  font-size: 12px;
   color: var(--lc-text-muted);
 }
 

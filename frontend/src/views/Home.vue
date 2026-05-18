@@ -67,10 +67,6 @@
             教师管理
             <el-tag size="mini" type="success" style="margin-left: 8px;">TEACHER</el-tag>
           </div>
-          <router-link to="/home/teacher/dashboard" class="nav-item" :class="{ active: $route.path === '/home/teacher/dashboard' }">
-            <i class="el-icon-s-platform"></i>
-            <span v-show="!sidebarCollapsed">工作台</span>
-          </router-link>
           <router-link to="/home/teacher/questions" class="nav-item" :class="{ active: $route.path === '/home/teacher/questions' }">
             <i class="el-icon-edit-outline"></i>
             <span v-show="!sidebarCollapsed">题目管理</span>
@@ -78,10 +74,6 @@
           <router-link to="/home/teacher/tutorials" class="nav-item" :class="{ active: $route.path === '/home/teacher/tutorials' }">
             <i class="el-icon-reading"></i>
             <span v-show="!sidebarCollapsed">教程管理</span>
-          </router-link>
-          <router-link to="/home/teacher/courses" class="nav-item" :class="{ active: $route.path === '/home/teacher/courses' }">
-            <i class="el-icon-collection"></i>
-            <span v-show="!sidebarCollapsed">课程管理</span>
           </router-link>
           <router-link to="/home/teacher/knowledge" class="nav-item" :class="{ active: $route.path === '/home/teacher/knowledge' }">
             <i class="el-icon-notebook-2"></i>

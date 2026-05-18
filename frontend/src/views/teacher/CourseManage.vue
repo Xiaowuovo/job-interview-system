@@ -112,7 +112,7 @@
       </el-button>
 
       <el-table :data="chapters" v-loading="chapterLoading">
-        <el-table-column prop="orderNum" label="序号" width="80"></el-table-column>
+        <el-table-column prop="sortOrder" label="排序" width="80"></el-table-column>
         <el-table-column prop="title" label="章节标题" min-width="200"></el-table-column>
         <el-table-column prop="duration" label="时长(分钟)" width="120"></el-table-column>
         <el-table-column label="操作" width="150">
@@ -136,19 +136,19 @@
           <el-input v-model="chapterForm.title" placeholder="请输入章节标题"></el-input>
         </el-form-item>
 
-        <el-form-item label="章节内容" prop="content">
+        <el-form-item label="章节描述" prop="description">
           <el-input
             type="textarea"
-            v-model="chapterForm.content"
-            :rows="6"
-            placeholder="请输入章节内容">
+            v-model="chapterForm.description"
+            :rows="4"
+            placeholder="请输入章节描述">
           </el-input>
         </el-form-item>
 
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="序号" prop="orderNum">
-              <el-input-number v-model="chapterForm.orderNum" :min="1" style="width: 100%;"></el-input-number>
+            <el-form-item label="排序" prop="sortOrder">
+              <el-input-number v-model="chapterForm.sortOrder" :min="1" style="width: 100%;"></el-input-number>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -200,13 +200,12 @@ export default {
       chapterLoading: false,
       chapterForm: {
         title: '',
-        content: '',
-        orderNum: 1,
+        description: '',
+        sortOrder: 1,
         duration: 30
       },
       chapterRules: {
-        title: [{ required: true, message: '请输入章节标题', trigger: 'blur' }],
-        content: [{ required: true, message: '请输入章节内容', trigger: 'blur' }]
+        title: [{ required: true, message: '请输入章节标题', trigger: 'blur' }]
       }
     }
   },
@@ -318,8 +317,8 @@ export default {
       this.chapterEditTitle = '添加章节'
       this.chapterForm = {
         title: '',
-        content: '',
-        orderNum: this.chapters.length + 1,
+        description: '',
+        sortOrder: this.chapters.length + 1,
         duration: 30
       }
       this.chapterEditDialogVisible = true
@@ -329,8 +328,8 @@ export default {
       this.chapterForm = {
         id: row.id,
         title: row.title,
-        content: row.content,
-        orderNum: row.orderNum,
+        description: row.description,
+        sortOrder: row.sortOrder,
         duration: row.duration
       }
       this.chapterEditDialogVisible = true

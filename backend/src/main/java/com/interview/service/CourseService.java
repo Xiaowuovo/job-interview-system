@@ -187,6 +187,37 @@ public class CourseService {
     }
 
     /**
+     * 更新章节
+     */
+    @Transactional
+    public CourseChapter updateChapter(CourseChapter chapter) {
+        CourseChapter existing = chapterRepository.findById(chapter.getId())
+            .orElseThrow(() -> new RuntimeException("章节不存在"));
+        if (chapter.getTitle() != null) existing.setTitle(chapter.getTitle());
+        if (chapter.getDescription() != null) existing.setDescription(chapter.getDescription());
+        if (chapter.getSortOrder() != null) existing.setSortOrder(chapter.getSortOrder());
+        if (chapter.getDuration() != null) existing.setDuration(chapter.getDuration());
+        return chapterRepository.save(existing);
+    }
+
+    /**
+     * 删除章节
+     */
+    @Transactional
+    public void deleteChapter(Long chapterId) {
+        CourseChapter chapter = chapterRepository.findById(chapterId)
+            .orElseThrow(() -> new RuntimeException("章节不存在"));
+        contentRepository.deleteByChapterId(chapterId);
+        chapterRepository.deleteById(chapterId);
+        // 更新课程章节数
+        Course course = courseRepository.findById(chapter.getCourseId()).orElse(null);
+        if (course != null && course.getChapterCount() > 0) {
+            course.setChapterCount(course.getChapterCount() - 1);
+            courseRepository.save(course);
+        }
+    }
+
+    /**
      * 添加章节内容
      */
     @Transactional

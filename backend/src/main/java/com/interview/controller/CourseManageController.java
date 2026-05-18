@@ -122,6 +122,25 @@ public class CourseManageController {
     }
 
     /**
+     * 更新章节
+     */
+    @PutMapping("/chapter/{chapterId}")
+    public Result<CourseChapter> updateChapter(@PathVariable Long chapterId, @RequestBody CourseChapter chapter) {
+        chapter.setId(chapterId);
+        CourseChapter updated = courseService.updateChapter(chapter);
+        return Result.success(updated);
+    }
+
+    /**
+     * 删除章节
+     */
+    @DeleteMapping("/chapter/{chapterId}")
+    public Result<Void> deleteChapter(@PathVariable Long chapterId) {
+        courseService.deleteChapter(chapterId);
+        return Result.success(null);
+    }
+
+    /**
      * 获取章节内容
      */
     @GetMapping("/chapter/{chapterId}/contents")
