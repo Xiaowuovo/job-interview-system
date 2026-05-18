@@ -123,9 +123,10 @@ public class KnowledgeController {
         Long knowledgePointId = Long.valueOf(params.get("knowledgePointId").toString());
         Integer progress = Integer.valueOf(params.get("progress").toString());
         Integer studyTime = Integer.valueOf(params.get("studyTime").toString());
+        String level = params.get("level") != null ? params.get("level").toString() : null;
 
         StudyRecord record = knowledgeService.recordStudyProgress(
-                userId, knowledgePointId, progress, studyTime);
+                userId, knowledgePointId, progress, studyTime, level);
         return Result.success(record);
     }
 
@@ -146,7 +147,7 @@ public class KnowledgeController {
             @PathVariable Long knowledgePointId) {
         return knowledgeService.getUserKnowledgePointRecord(userId, knowledgePointId)
                 .map(Result::success)
-                .orElse(Result.error("未找到学习记录"));
+                .orElse(Result.success(null));
     }
 
     /**

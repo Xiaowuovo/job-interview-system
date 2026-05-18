@@ -249,8 +249,8 @@ export default {
       }
       this.$http.post('/knowledge/study', data).then(() => {
         this.$message.success('学习进度已保存')
+        this.studyLevel = level
         this.loadStudyRecords()
-        this.handleClose()
       }).catch(() => {
         this.$message.error('保存失败')
       })

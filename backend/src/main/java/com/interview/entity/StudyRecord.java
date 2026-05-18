@@ -32,6 +32,9 @@ public class StudyRecord {
     @Column(name = "mastery_level")
     private Integer masteryLevel; // 掌握度（0-100）
 
+    @Column(name = "level")
+    private String level; // 学习等级：understand, familiar, master
+
     @Column(columnDefinition = "TEXT")
     private String notes; // 学习笔记
 

@@ -122,7 +122,7 @@ public class KnowledgeService {
     /**
      * 记录学习进度
      */
-    public StudyRecord recordStudyProgress(Long userId, Long knowledgePointId, Integer progress, Integer studyTime) {
+    public StudyRecord recordStudyProgress(Long userId, Long knowledgePointId, Integer progress, Integer studyTime, String level) {
         Optional<StudyRecord> existingRecord = studyRecordRepository
                 .findByUserIdAndKnowledgePointId(userId, knowledgePointId);
 
@@ -133,6 +133,7 @@ public class KnowledgeService {
             record.setProgress(progress);
             record.setStudyTime(record.getStudyTime() + studyTime);
             record.setLastStudyAt(LocalDateTime.now());
+            if (level != null) record.setLevel(level);
 
             // 更新状态
             if (progress >= 100) {
@@ -152,6 +153,7 @@ public class KnowledgeService {
             record.setLastStudyAt(LocalDateTime.now());
             record.setStatus(progress >= 100 ? StudyRecord.Status.COMPLETED : StudyRecord.Status.IN_PROGRESS);
             record.setMasteryLevel(progress);
+            if (level != null) record.setLevel(level);
         }
 
         return studyRecordRepository.save(record);

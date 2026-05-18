@@ -6,13 +6,6 @@
           <i class="el-icon-star-on"></i> 我的收藏（{{ filteredFavorites.length }}）
         </span>
         <div style="float: right;">
-          <el-radio-group v-model="filterType" size="small" @change="loadFavorites" style="margin-right: 10px;">
-            <el-radio-button label="all">全部</el-radio-button>
-            <el-radio-button label="question">题目</el-radio-button>
-            <el-radio-button label="wrong">错题</el-radio-button>
-            <el-radio-button label="tutorial">教程</el-radio-button>
-            <el-radio-button label="knowledge">知识</el-radio-button>
-          </el-radio-group>
           <el-button
             type="danger"
             size="small"
@@ -160,7 +153,6 @@ export default {
     return {
       user: JSON.parse(localStorage.getItem('user') || '{}'),
       favorites: [],
-      filterType: 'all', // all, question, wrong, tutorial, knowledge
       loading: false,
       notesDialogVisible: false,
       editingNotes: '',
@@ -169,10 +161,7 @@ export default {
   },
   computed: {
     filteredFavorites() {
-      if (this.filterType === 'all') {
-        return this.favorites
-      }
-      return this.favorites.filter(f => f.type === this.filterType)
+      return this.favorites
     }
   },
   mounted() {
@@ -221,18 +210,17 @@ export default {
         if (this.$refs.favoritesTable) {
           this.$refs.favoritesTable.toggleRowExpansion(item, true)
         }
-      } else if (item.type === 'wrong' && item.wrongQuestion) {
+      } else if (item.type === 'wrong') {
         // 跳转到错题本
         this.$router.push('/home/wrong-questions')
-      } else if (item.type === 'tutorial' && item.tutorialId) {
+      } else if (item.type === 'tutorial' && item.itemId) {
         // 跳转到教程详情
-        this.$router.push(`/home/tutorial/${item.tutorialId}`)
-      } else if (item.type === 'knowledge' && item.knowledgeId) {
-        // 展开知识点详情（可以打开对话框或跳转）
-        this.$message.info('正在打开知识点...')
+        this.$router.push(`/home/tutorial/${item.itemId}`)
+      } else if (item.type === 'knowledge' && item.itemId) {
+        // 跳转到知识点页面
         this.$router.push('/home/knowledge')
       } else {
-        this.$message.info('内容加载中...')
+        this.$message.warning('暂无内容可查看')
       }
     },
     editNotes(row) {
@@ -241,23 +229,34 @@ export default {
       this.notesDialogVisible = true
     },
     saveNotes() {
-      this.$http.post('/favorites/add', {
-        userId: this.user.id,
-        questionId: this.currentEditingRow.questionId,
-        notes: this.editingNotes
-      }).then(() => {
+      const row = this.currentEditingRow
+      const payload = { userId: this.user.id, notes: this.editingNotes }
+      if (row.type === 'question' && row.questionId) {
+        payload.type = 'question'
+        payload.questionId = row.questionId
+      } else {
+        payload.type = row.type
+        payload.itemId = row.itemId
+      }
+      this.$http.post('/favorites/add', payload).then(() => {
         this.$message.success('笔记保存成功')
         this.notesDialogVisible = false
         this.loadFavorites()
       }).catch(() => {})
     },
     removeFavorite(row) {
-      this.$confirm('确定要取消收藏这道题吗？', '提示', {
+      this.$confirm('确定要取消收藏吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.$http.delete(`/favorites/remove?userId=${this.user.id}&questionId=${row.questionId}`)
+        let url
+        if (row.type === 'question' && row.questionId) {
+          url = `/favorites/remove?userId=${this.user.id}&questionId=${row.questionId}`
+        } else {
+          url = `/favorites/remove?userId=${this.user.id}&type=${row.type}&itemId=${row.itemId}`
+        }
+        this.$http.delete(url)
           .then(() => {
             this.$message.success('已取消收藏')
             this.loadFavorites()
@@ -265,19 +264,24 @@ export default {
       }).catch(() => {})
     },
     clearAll() {
-      this.$confirm(`确定要清空所有收藏（${this.favorites.length}道题）吗？`, '提示', {
+      this.$confirm(`确定要清空所有收藏（${this.favorites.length} 条）吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        const questionIds = this.favorites.map(f => f.questionId)
-        this.$http.post('/favorites/remove-batch', {
-          userId: this.user.id,
-          questionIds: questionIds
-        }).then(res => {
-          this.$message.success(`已清空 ${res.data || questionIds.length} 个收藏`)
+        const deleteAll = this.favorites.map(row => {
+          let url
+          if (row.type === 'question' && row.questionId) {
+            url = `/favorites/remove?userId=${this.user.id}&questionId=${row.questionId}`
+          } else {
+            url = `/favorites/remove?userId=${this.user.id}&type=${row.type}&itemId=${row.itemId}`
+          }
+          return this.$http.delete(url).catch(() => {})
+        })
+        Promise.all(deleteAll).then(() => {
+          this.$message.success('已清空所有收藏')
           this.loadFavorites()
-        }).catch(() => {})
+        })
       }).catch(() => {})
     },
     getDifficultyType(difficulty) {
