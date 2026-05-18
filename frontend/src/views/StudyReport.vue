@@ -9,13 +9,6 @@
         <el-radio-button label="month">本月</el-radio-button>
         <el-radio-button label="week">本周</el-radio-button>
       </el-radio-group>
-      <el-button
-        style="float: right;"
-        type="primary"
-        size="small"
-        @click="exportReport">
-        <i class="el-icon-download"></i> 导出报告
-      </el-button>
     </el-card>
 
     <div v-loading="loading">
@@ -69,13 +62,6 @@
         </el-col>
       </el-row>
 
-      <!-- 成长曲线 -->
-      <el-card shadow="hover" style="margin-top: 20px;" v-if="trendData">
-        <div slot="header">
-          <i class="el-icon-data-line"></i> 成长曲线
-        </div>
-        <div id="trendChart" style="height: 400px;"></div>
-      </el-card>
 
       <!-- 分类统计 -->
       <el-card shadow="hover" style="margin-top: 20px;" v-if="report && report.categoryStats">
@@ -104,83 +90,32 @@
         </el-table>
       </el-card>
 
-      <!-- 能力雷达图 -->
-      <el-row :gutter="20" style="margin-top: 20px;">
-        <el-col :span="12">
-          <el-card shadow="hover" v-if="report && report.abilityModel">
-            <div slot="header">
-              <i class="el-icon-s-data"></i> 能力模型
-            </div>
-            <div id="abilityChart" style="height: 400px;"></div>
-          </el-card>
-        </el-col>
-
-        <el-col :span="12">
-          <!-- 错题本统计 -->
-          <el-card shadow="hover" v-if="report">
-            <div slot="header">
-              <i class="el-icon-warning-outline"></i> 错题本统计
-            </div>
-            <div class="wrong-stats">
-              <div class="wrong-item">
-                <div class="wrong-label">错题总数</div>
-                <div class="wrong-value">{{ report.wrongCount }}</div>
-              </div>
-              <div class="wrong-item">
-                <div class="wrong-label">已掌握</div>
-                <div class="wrong-value" style="color: #67C23A;">{{ report.masteredCount }}</div>
-              </div>
-              <div class="wrong-item">
-                <div class="wrong-label">掌握率</div>
-                <div class="wrong-value">
-                  {{ report.wrongCount > 0 ? ((report.masteredCount / report.wrongCount * 100).toFixed(1)) : 0 }}%
-                </div>
-              </div>
-            </div>
-            <el-divider></el-divider>
-            <div style="text-align: center;">
-              <el-button type="primary" size="small" @click="goToWrongQuestions">
-                去错题本复习
-              </el-button>
-            </div>
-          </el-card>
-
-          <!-- 成就徽章 -->
-          <el-card shadow="hover" style="margin-top: 20px;" v-if="report && report.achievements">
-            <div slot="header">
-              <i class="el-icon-trophy"></i> 成就徽章
-            </div>
-            <div class="achievements">
-              <el-tag
-                v-for="(achievement, index) in report.achievements"
-                :key="index"
-                type="success"
-                effect="dark"
-                size="medium"
-                style="margin: 5px;">
-                <i class="el-icon-medal"></i> {{ achievement }}
-              </el-tag>
-              <div v-if="report.achievements.length === 0" class="empty-achievements">
-                <i class="el-icon-info"></i> 继续努力，解锁更多成就！
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-
-      <!-- 学习建议 -->
-      <el-card shadow="hover" style="margin-top: 20px;" v-if="report && report.suggestions">
+      <!-- 错题本统计 -->
+      <el-card shadow="hover" style="margin-top: 20px;" v-if="report">
         <div slot="header">
-          <i class="el-icon-s-opportunity"></i> 学习建议
+          <i class="el-icon-warning-outline"></i> 错题本统计
         </div>
-        <div class="suggestions">
-          <div
-            v-for="(suggestion, index) in report.suggestions"
-            :key="index"
-            class="suggestion-item">
-            <i class="el-icon-check"></i>
-            <span>{{ suggestion }}</span>
+        <div class="wrong-stats">
+          <div class="wrong-item">
+            <div class="wrong-label">错题总数</div>
+            <div class="wrong-value">{{ report.wrongCount }}</div>
           </div>
+          <div class="wrong-item">
+            <div class="wrong-label">已掌握</div>
+            <div class="wrong-value" style="color: #67C23A;">{{ report.masteredCount }}</div>
+          </div>
+          <div class="wrong-item">
+            <div class="wrong-label">掌握率</div>
+            <div class="wrong-value">
+              {{ report.wrongCount > 0 ? ((report.masteredCount / report.wrongCount * 100).toFixed(1)) : 0 }}%
+            </div>
+          </div>
+        </div>
+        <el-divider></el-divider>
+        <div style="text-align: center;">
+          <el-button type="primary" size="small" @click="goToWrongQuestions">
+            去错题本复习
+          </el-button>
         </div>
       </el-card>
     </div>
@@ -188,8 +123,6 @@
 </template>
 
 <script>
-import * as echarts from 'echarts'
-
 export default {
   name: 'StudyReport',
   data() {
@@ -197,10 +130,7 @@ export default {
       user: JSON.parse(localStorage.getItem('user') || '{}'),
       period: '',
       report: null,
-      trendData: null,
-      loading: false,
-      trendChart: null,
-      abilityChart: null
+      loading: false
     }
   },
   computed: {
@@ -217,11 +147,6 @@ export default {
   },
   mounted() {
     this.loadReport()
-    this.loadTrend()
-  },
-  beforeDestroy() {
-    if (this.trendChart) this.trendChart.dispose()
-    if (this.abilityChart) this.abilityChart.dispose()
   },
   methods: {
     loadReport() {
@@ -230,7 +155,6 @@ export default {
 
       this.$http.get(`/reports/study/${this.user.id}${params}`).then(res => {
         if (res.data) {
-          // 处理数据，确保所有字段都有默认值
           this.report = {
             totalStudyTime: res.data.totalStudyTime || 0,
             studyDays: res.data.studyDays || 0,
@@ -243,172 +167,19 @@ export default {
             interviewCount: res.data.interviewCount || 0,
             wrongCount: res.data.wrongCount || 0,
             masteredCount: res.data.masteredCount || 0,
-            categoryStats: res.data.categoryStats || {},
-            abilityModel: res.data.abilityModel || null,
-            suggestions: res.data.suggestions || ['暂无学习建议'],
-            achievements: res.data.achievements || []
+            categoryStats: res.data.categoryStats || {}
           }
-          this.$nextTick(() => {
-            this.renderAbilityChart()
-          })
         }
-      }).catch(err => {
-        console.error('加载学习报告失败', err)
-        // 设置默认空数据
+      }).catch(() => {
         this.report = {
-          totalStudyTime: 0,
-          studyDays: 0,
-          avgStudyTime: 0,
-          totalQuestions: 0,
-          correctQuestions: 0,
-          accuracy: '0.0',
-          avgTestScore: '0.0',
-          testCount: 0,
-          interviewCount: 0,
-          wrongCount: 0,
-          masteredCount: 0,
-          categoryStats: {},
-          abilityModel: null,
-          suggestions: ['开始学习后，这里将显示个性化建议'],
-          achievements: []
+          totalStudyTime: 0, studyDays: 0, avgStudyTime: 0,
+          totalQuestions: 0, correctQuestions: 0, accuracy: '0.0',
+          avgTestScore: '0.0', testCount: 0, interviewCount: 0,
+          wrongCount: 0, masteredCount: 0, categoryStats: {}
         }
       }).finally(() => {
         this.loading = false
       })
-    },
-    loadTrend() {
-      this.$http.get(`/reports/trend/${this.user.id}?days=30`).then(res => {
-        if (res.data && res.data.dates && res.data.dates.length > 0) {
-          this.trendData = res.data
-          this.$nextTick(() => {
-            this.renderTrendChart()
-          })
-        } else {
-          // 没有数据时不显示图表
-          this.trendData = null
-        }
-      }).catch(() => {
-        this.trendData = null
-      })
-    },
-    renderTrendChart() {
-      if (!this.trendData) return
-
-      const chartDom = document.getElementById('trendChart')
-      if (!chartDom) return
-
-      this.trendChart = echarts.init(chartDom)
-
-      const option = {
-        title: {
-          text: '最近30天学习趋势'
-        },
-        tooltip: {
-          trigger: 'axis'
-        },
-        legend: {
-          data: ['学习时长', '题目数量', '正确率']
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          boundaryGap: false,
-          data: this.trendData.dates
-        },
-        yAxis: [
-          {
-            type: 'value',
-            name: '时长/数量',
-            position: 'left'
-          },
-          {
-            type: 'value',
-            name: '正确率(%)',
-            position: 'right',
-            max: 100
-          }
-        ],
-        series: [
-          {
-            name: '学习时长',
-            type: 'line',
-            data: this.trendData.studyTimes,
-            smooth: true,
-            itemStyle: { color: '#409EFF' }
-          },
-          {
-            name: '题目数量',
-            type: 'line',
-            data: this.trendData.questionCounts,
-            smooth: true,
-            itemStyle: { color: '#67C23A' }
-          },
-          {
-            name: '正确率',
-            type: 'line',
-            yAxisIndex: 1,
-            data: this.trendData.accuracies,
-            smooth: true,
-            itemStyle: { color: '#E6A23C' }
-          }
-        ]
-      }
-
-      this.trendChart.setOption(option)
-    },
-    renderAbilityChart() {
-      if (!this.report || !this.report.abilityModel) return
-
-      const chartDom = document.getElementById('abilityChart')
-      if (!chartDom) return
-
-      this.abilityChart = echarts.init(chartDom)
-
-      const ability = this.report.abilityModel
-
-      const option = {
-        title: {
-          text: '能力评估雷达图'
-        },
-        tooltip: {},
-        radar: {
-          indicator: [
-            { name: 'Java', max: 100 },
-            { name: '算法', max: 100 },
-            { name: '前端', max: 100 },
-            { name: '数据库', max: 100 },
-            { name: '系统设计', max: 100 }
-          ]
-        },
-        series: [{
-          type: 'radar',
-          data: [
-            {
-              value: [
-                ability.javaScore || 0,
-                ability.algorithmScore || 0,
-                ability.frontendScore || 0,
-                ability.databaseScore || 0,
-                ability.systemDesignScore || 0
-              ],
-              name: '当前能力'
-            }
-          ],
-          itemStyle: {
-            color: '#409EFF'
-          },
-          areaStyle: {
-            opacity: 0.3
-          }
-        }]
-      }
-
-      this.abilityChart.setOption(option)
     },
     getAccuracyColor(accuracy) {
       if (accuracy >= 80) return '#67C23A'
@@ -424,9 +195,6 @@ export default {
       if (accuracy >= 80) return '熟练'
       if (accuracy >= 60) return '一般'
       return '薄弱'
-    },
-    exportReport() {
-      this.$message.info('报告导出功能开发中...')
     },
     goToWrongQuestions() {
       this.$router.push('/home/wrong-questions')

@@ -271,7 +271,13 @@ export default {
     },
     formatDate(dateStr) {
       if (!dateStr) return ''
-      const d = new Date(dateStr)
+      let d
+      if (Array.isArray(dateStr)) {
+        d = new Date(dateStr[0], dateStr[1] - 1, dateStr[2], dateStr[3] || 0, dateStr[4] || 0, dateStr[5] || 0)
+      } else {
+        d = new Date(dateStr)
+      }
+      if (isNaN(d.getTime())) return ''
       return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
     }
   }

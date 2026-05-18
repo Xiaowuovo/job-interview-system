@@ -139,12 +139,6 @@
               </div>
               <span>我的错题</span>
             </div>
-            <div class="action-item" @click="$router.push('/home/ability')">
-              <div class="action-icon" style="background: #f4f4f5; color: #909399">
-                <i class="el-icon-data-analysis"></i>
-              </div>
-              <span>能力评估</span>
-            </div>
             <div class="action-item" @click="$router.push('/home/favorites')">
               <div class="action-icon" style="background: #fff7e6; color: #E6A23C">
                 <i class="el-icon-star-on"></i>
@@ -314,12 +308,19 @@ export default {
       })
 
       // 加载知识点学习统计
-      this.$http.get(`/knowledge/statistics/${user.id}`).then(res => {
-        if (res.data) {
-          this.stats.knowledgeCount = res.data.totalKnowledgePoints || 0
-          this.updateStudyChart(res.data)
-        }
-      })
+      Promise.all([
+        this.$http.get(`/knowledge/statistics/${user.id}`),
+        this.$http.get('/knowledge')
+      ]).then(([statsRes, allRes]) => {
+        const stats = statsRes.data || {}
+        const totalSystemKPs = allRes.data ? allRes.data.length : 0
+        this.stats.knowledgeCount = stats.totalKnowledgePoints || 0
+        this.updateStudyChart({
+          completedCount: stats.completedCount || 0,
+          inProgressCount: stats.inProgressCount || 0,
+          totalSystemKPs
+        })
+      }).catch(() => {})
     },
     initCharts() {
       this.studyChart = echarts.init(document.getElementById('studyChart'))
@@ -368,7 +369,7 @@ export default {
               { value: data.completedCount || 0, name: '已完成', itemStyle: { color: '#67C23A' } },
               { value: data.inProgressCount || 0, name: '学习中', itemStyle: { color: '#E6A23C' } },
               {
-                value: Math.max(0, (data.totalKnowledgePoints || 0) - (data.completedCount || 0) - (data.inProgressCount || 0)),
+                value: Math.max(0, (data.totalSystemKPs || 0) - (data.completedCount || 0) - (data.inProgressCount || 0)),
                 name: '未开始',
                 itemStyle: { color: '#909399' }
               }

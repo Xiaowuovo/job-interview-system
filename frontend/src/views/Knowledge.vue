@@ -42,8 +42,8 @@
     </div>
 
     <!-- 知识点列表 -->
-    <el-row :gutter="20" style="margin-top: 20px;" v-else>
-      <el-col :span="6" v-for="kp in knowledgePoints" :key="kp.id">
+    <el-row :gutter="20" v-else type="flex" style="flex-wrap: wrap; margin-top: 20px;">
+      <el-col :span="6" v-for="kp in knowledgePoints" :key="kp.id" style="margin-bottom: 16px;">
         <el-card class="knowledge-card" shadow="hover" @click.native="viewDetail(kp)">
           <div class="card-header">
             <h3>{{ kp.title }}</h3>
@@ -333,7 +333,6 @@ export default {
 }
 
 .knowledge-card {
-  margin-bottom: 16px;
   cursor: pointer;
   transition: all var(--lc-transition);
   background: var(--lc-bg-card) !important;

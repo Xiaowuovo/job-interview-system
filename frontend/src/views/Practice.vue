@@ -20,17 +20,7 @@
           <div class="category-info">
             <h3>{{ category.name }}</h3>
             <p>{{ category.description }}</p>
-            <div class="category-stats">
-              <span class="stat-item">
-                <i class="el-icon-document"></i>
-                {{ category.questionCount || 50 }}+ 题目
-              </span>
-              <span class="stat-item">
-                <i class="el-icon-user"></i>
-                {{ category.userCount || 1000 }}+ 练习
-              </span>
             </div>
-          </div>
         </div>
         <div class="card-action">
           <span class="start-btn">
@@ -87,33 +77,25 @@ export default {
           name: 'Java',
           description: 'Java基础、集合框架、多线程并发、JVM等',
           icon: 'el-icon-cpu',
-          gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          questionCount: 120,
-          userCount: 2500
+          gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
         },
         {
           name: '前端',
           description: 'HTML/CSS、JavaScript、Vue/React、浏览器原理',
           icon: 'el-icon-monitor',
-          gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-          questionCount: 85,
-          userCount: 1800
+          gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'
         },
         {
           name: '数据库',
           description: 'MySQL、Redis、索引优化、事务处理',
           icon: 'el-icon-coin',
-          gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          questionCount: 65,
-          userCount: 1200
+          gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
         },
         {
           name: '算法',
           description: '数据结构、排序算法、动态规划、图论',
           icon: 'el-icon-set-up',
-          gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          questionCount: 150,
-          userCount: 3200
+          gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
         }
       ]
     }

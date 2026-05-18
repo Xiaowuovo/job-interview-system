@@ -41,53 +41,6 @@
           </div>
         </el-tab-pane>
 
-        <el-tab-pane label="AI模拟问答记录" name="interview">
-          <el-table :data="interviewRecords" style="width: 100%">
-            <el-table-column prop="type" label="面试类型" width="120"></el-table-column>
-            <el-table-column label="综合得分" width="100">
-              <template slot-scope="scope">
-                <el-tag :type="getScoreType(scope.row.avgScore)">
-                  {{ scope.row.avgScore }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="技术" width="80">
-              <template slot-scope="scope">
-                {{ scope.row.technicalScore }}
-              </template>
-            </el-table-column>
-            <el-table-column label="逻辑" width="80">
-              <template slot-scope="scope">
-                {{ scope.row.logicalScore }}
-              </template>
-            </el-table-column>
-            <el-table-column label="表达" width="80">
-              <template slot-scope="scope">
-                {{ scope.row.expressionScore }}
-              </template>
-            </el-table-column>
-            <el-table-column label="问题数" width="80">
-              <template slot-scope="scope">
-                {{ scope.row.questionCount }}
-              </template>
-            </el-table-column>
-            <el-table-column label="面试时间" width="180">
-              <template slot-scope="scope">
-                {{ formatDate(scope.row.createdAt) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120">
-              <template slot-scope="scope">
-                <el-button
-                  type="text"
-                  size="small"
-                  @click="viewInterviewReport(scope.row.id)">
-                  <i class="el-icon-document"></i> 查看报告
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
@@ -100,7 +53,6 @@ export default {
     return {
       activeTab: 'test',
       testRecords: [],
-      interviewRecords: [],
       testStats: null
     }
   },
@@ -129,36 +81,6 @@ export default {
         }
       }).catch(() => {})
 
-      this.$http.get(`/interview/history/${user.id}`).then(res => {
-        if (res.data) {
-          // 适配后端字段
-          this.interviewRecords = res.data.map(session => {
-            // 解析conversation获取问题数
-            let questionCount = 0
-            try {
-              if (session.conversation) {
-                const conv = JSON.parse(session.conversation)
-                questionCount = Math.floor(conv.length / 2) // AI和用户一问一答
-              }
-            } catch (e) {
-              console.error('解析conversation失败', e)
-            }
-            
-            // 模拟评分（如果后端没有）
-            const avgScore = session.avgScore || session.totalScore || 75
-            return {
-              id: session.id,
-              type: session.position || '通用面试',
-              avgScore: avgScore,
-              technicalScore: Math.round(avgScore * 0.95 + Math.random() * 5),
-              logicalScore: Math.round(avgScore * 0.98 + Math.random() * 4),
-              expressionScore: Math.round(avgScore * 1.02 - Math.random() * 4),
-              questionCount: questionCount,
-              createdAt: session.createdAt
-            }
-          })
-        }
-      }).catch(() => {})
     },
     getScoreType(score) {
       if (score >= 85) return 'success'
@@ -167,9 +89,6 @@ export default {
     },
     formatDate(date) {
       return new Date(date).toLocaleString('zh-CN')
-    },
-    viewInterviewReport(sessionId) {
-      this.$router.push(`/home/interview-report/${sessionId}`)
     },
     formatDuration(seconds) {
       const m = Math.floor(seconds / 60)

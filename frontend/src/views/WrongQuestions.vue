@@ -637,9 +637,9 @@ export default {
 }
 
 /deep/ .el-button--success {
-  background: var(--lc-success-bg);
+  background: var(--lc-success);
   border: 1px solid var(--lc-success);
-  color: var(--lc-success);
+  color: #fff;
 }
 
 /deep/ .el-button--danger {

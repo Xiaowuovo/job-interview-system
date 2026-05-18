@@ -127,6 +127,25 @@
       </el-table>
     </el-card>
 
+    <!-- 知识点详情对话框 -->
+    <el-dialog
+      title="知识点详情"
+      :visible.sync="knowledgeDetailVisible"
+      width="65%">
+      <div v-if="currentKnowledgeItem">
+        <h2 style="margin: 0 0 10px;">{{ currentKnowledgeItem.title }}</h2>
+        <div style="margin-bottom: 16px;">
+          <el-tag size="small" type="info">{{ currentKnowledgeItem.category }}</el-tag>
+          <el-tag size="small" style="margin-left: 8px;">重要度: {{ currentKnowledgeItem.importance }}</el-tag>
+        </div>
+        <el-divider></el-divider>
+        <div class="markdown-content" v-html="renderMarkdown(currentKnowledgeItem.content)"></div>
+      </div>
+      <span slot="footer">
+        <el-button @click="knowledgeDetailVisible = false">关闭</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 笔记编辑对话框 -->
     <el-dialog
       title="编辑笔记"
@@ -147,6 +166,9 @@
 </template>
 
 <script>
+import MarkdownIt from 'markdown-it'
+const md = new MarkdownIt()
+
 export default {
   name: 'Favorites',
   data() {
@@ -154,6 +176,8 @@ export default {
       user: JSON.parse(localStorage.getItem('user') || '{}'),
       favorites: [],
       loading: false,
+      knowledgeDetailVisible: false,
+      currentKnowledgeItem: null,
       notesDialogVisible: false,
       editingNotes: '',
       currentEditingRow: null
@@ -216,9 +240,16 @@ export default {
       } else if (item.type === 'tutorial' && item.itemId) {
         // 跳转到教程详情
         this.$router.push(`/home/tutorial/${item.itemId}`)
+      } else if (item.type === 'knowledge' && item.knowledge) {
+        this.currentKnowledgeItem = item.knowledge
+        this.knowledgeDetailVisible = true
       } else if (item.type === 'knowledge' && item.itemId) {
-        // 跳转到知识点页面
-        this.$router.push('/home/knowledge')
+        this.$http.get(`/knowledge/${item.itemId}`).then(res => {
+          if (res.data) {
+            this.currentKnowledgeItem = res.data
+            this.knowledgeDetailVisible = true
+          }
+        }).catch(() => {})
       } else {
         this.$message.warning('暂无内容可查看')
       }
@@ -334,6 +365,9 @@ export default {
       if (item.tutorial) return item.tutorial.category || '-'
       if (item.knowledge) return item.knowledge.category || '-'
       return '-'
+    },
+    renderMarkdown(content) {
+      return md.render(content || '')
     }
   }
 }
@@ -500,6 +534,14 @@ export default {
   background: var(--lc-bg-input);
   border-color: var(--lc-border);
   color: var(--lc-text-primary);
+}
+
+.markdown-content {
+  padding: 10px 0;
+  line-height: 1.8;
+  color: var(--lc-text-primary);
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
 /* 动画 */
