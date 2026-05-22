@@ -32,10 +32,10 @@
           </el-button>
         </div>
         <el-radio-group v-model="answers[currentIndex]" class="options">
-          <el-radio label="A" border>A. {{ currentQuestion.optionA }}</el-radio>
-          <el-radio label="B" border>B. {{ currentQuestion.optionB }}</el-radio>
-          <el-radio label="C" border>C. {{ currentQuestion.optionC }}</el-radio>
-          <el-radio label="D" border>D. {{ currentQuestion.optionD }}</el-radio>
+          <el-radio label="A">A. {{ currentQuestion.optionA }}</el-radio>
+          <el-radio label="B">B. {{ currentQuestion.optionB }}</el-radio>
+          <el-radio label="C">C. {{ currentQuestion.optionC }}</el-radio>
+          <el-radio label="D">D. {{ currentQuestion.optionD }}</el-radio>
         </el-radio-group>
       </div>
 

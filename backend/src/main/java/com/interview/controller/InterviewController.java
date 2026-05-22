@@ -1,13 +1,18 @@
 package com.interview.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.Result;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.InterviewSession.SessionType;
+import com.interview.repository.InterviewSessionRepository;
 import com.interview.service.InterviewService;
+import com.interview.service.ZhipuAIService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +23,9 @@ import java.util.Map;
 public class InterviewController {
 
     private final InterviewService interviewService;
+    private final ZhipuAIService zhipuAIService;
+    private final InterviewSessionRepository interviewSessionRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 开始面试
@@ -72,5 +80,44 @@ public class InterviewController {
         return interviewService.getInterviewSession(sessionId)
                 .map(Result::success)
                 .orElse(Result.error("面试会话不存在"));
+    }
+
+    /**
+     * AI 面试报告：基于对话记录打分+总结
+     */
+    @GetMapping("/ai-report/{sessionId}")
+    public Result<Map<String, Object>> getAiReport(@PathVariable Long sessionId) {
+        InterviewSession session = interviewSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("面试会话不存在"));
+
+        String conversation = session.getConversation();
+        if (conversation == null || conversation.equals("[]")) {
+            return Result.error("暂无对话内容，无法生成报告");
+        }
+
+        // 将对话 JSON 转换为易读文本
+        StringBuilder text = new StringBuilder();
+        try {
+            List<Map<String, String>> msgs = objectMapper.readValue(
+                    conversation, new TypeReference<List<Map<String, String>>>() {});
+            for (Map<String, String> m : msgs) {
+                String role = "AI".equals(m.get("role")) ? "面试官" : "候选人";
+                text.append(role).append("：").append(m.get("message")).append("\n");
+            }
+        } catch (Exception e) {
+            return Result.error("对话记录解析失败");
+        }
+
+        String reportContent = zhipuAIService.generateInterviewReport(
+                session.getPosition() != null ? session.getPosition() : "未知岗位",
+                text.toString()
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("sessionId", sessionId);
+        result.put("position", session.getPosition());
+        result.put("startTime", session.getStartTime());
+        result.put("report", reportContent);
+        return Result.success(result);
     }
 }

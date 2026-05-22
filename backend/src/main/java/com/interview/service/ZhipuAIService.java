@@ -154,6 +154,22 @@ public class ZhipuAIService {
     }
     
     /**
+     * 基于对话历史生成面试报告（打分+总结）
+     */
+    public String generateInterviewReport(String position, String conversationText) {
+        String systemPrompt = "你是一位专业的面试评估专家，请根据以下面试对话内容，给候选人做出评估报告。\n" +
+            "报告必须包含以下几个部分，用中文回答：\n" +
+            "1. 【综合评分】：0-100分，并说明评分依据\n" +
+            "2. 【优势亮点】：候选人表现好的方面（3条以内）\n" +
+            "3. 【待改进项】：需要加强的地方（3条以内）\n" +
+            "4. 【总体总结】：对本次面试的综合评价，100字以内\n" +
+            "5. 【改进建议】：给候选人的具体学习和提升建议\n" +
+            "请严格按照上述格式输出，不要输出其他内容。";
+        String userMessage = String.format("应聘岗位：%s\n\n面试对话记录如下：\n%s", position, conversationText);
+        return generateReply(systemPrompt, userMessage, "");
+    }
+
+    /**
      * 生成面试系统提示词
      */
     public String generateInterviewSystemPrompt(String position) {

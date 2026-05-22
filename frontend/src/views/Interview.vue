@@ -51,7 +51,10 @@
             <i class="el-icon-chat-dot-round"></i>
             {{ currentPosition }} · 历史记录
           </div>
-          <el-button size="small" @click="closeHistory">关闭</el-button>
+          <div style="display:flex;gap:8px;">
+            <el-button size="small" type="warning" icon="el-icon-document" @click="showReport">面试报告</el-button>
+            <el-button size="small" @click="closeHistory">关闭</el-button>
+          </div>
         </div>
         <div class="chat-container" ref="chatContainer">
           <div v-for="(msg, idx) in messages" :key="idx"
@@ -112,6 +115,24 @@
       </div>
     </div>
 
+    <!-- 面试报告弹窗 -->
+    <el-dialog title="AI 面试报告" :visible.sync="reportDialogVisible" width="640px" :close-on-click-modal="false">
+      <div v-loading="reportLoading" style="min-height:200px;">
+        <div v-if="reportContent" class="report-content">
+          <div class="report-meta">
+            <span><i class="el-icon-s-custom"></i> 应聘岗位：<b>{{ currentPosition }}</b></span>
+          </div>
+          <el-divider></el-divider>
+          <pre class="report-text">{{ reportContent }}</pre>
+        </div>
+        <el-empty v-else-if="!reportLoading" description="报告生成失败，请重试"></el-empty>
+      </div>
+      <span slot="footer">
+        <el-button @click="reportDialogVisible = false">关闭</el-button>
+        <el-button type="primary" icon="el-icon-refresh" @click="showReport" :loading="reportLoading">重新生成</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 新对话弹窗 -->
     <el-dialog title="开始新对话" :visible.sync="newChatDialogVisible" width="400px">
       <el-form label-width="80px">
@@ -151,7 +172,10 @@ export default {
       newChatDialogVisible: false,
       newChatPosition: '',
       historyList: [],
-      historyLoading: false
+      historyLoading: false,
+      reportDialogVisible: false,
+      reportLoading: false,
+      reportContent: ''
     }
   },
   mounted() {
@@ -262,6 +286,20 @@ export default {
       this.viewingHistory = false
       this.currentSessionId = null
       this.messages = []
+    },
+    showReport() {
+      this.reportContent = ''
+      this.reportDialogVisible = true
+      this.reportLoading = true
+      this.$http.get(`/interview/ai-report/${this.currentSessionId}`).then(res => {
+        this.reportContent = res.data ? res.data.report : ''
+        if (!this.reportContent) this.$message.warning('报告内容为空')
+      }).catch(err => {
+        this.$message.error(err.message || '报告生成失败，请重试')
+        this.reportDialogVisible = false
+      }).finally(() => {
+        this.reportLoading = false
+      })
     },
     addMessage(type, content) {
       this.messages.push({ type, content, time: new Date() })
@@ -617,5 +655,27 @@ export default {
   background: var(--lc-bg-input);
   border-color: var(--lc-border);
   color: var(--lc-text-primary);
+}
+
+/* 面试报告 */
+.report-meta {
+  font-size: 14px;
+  color: var(--lc-text-secondary);
+  padding: 4px 0;
+}
+
+.report-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--lc-text-primary);
+  background: var(--lc-bg-tertiary);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 0;
+  max-height: 480px;
+  overflow-y: auto;
 }
 </style>
