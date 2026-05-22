@@ -245,7 +245,11 @@ export default {
           try {
             const parsed = JSON.parse(res.data.conversation)
             if (Array.isArray(parsed)) {
-              this.messages = parsed
+              this.messages = parsed.map(m => ({
+                type: (m.role || m.type || '').toLowerCase() === 'user' ? 'user' : 'ai',
+                content: m.message || m.content || '',
+                time: m.timestamp || m.time || null
+              }))
             }
           } catch (e) {
             this.messages = []
@@ -267,7 +271,15 @@ export default {
       })
     },
     formatTime(time) {
-      return new Date(time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      if (!time) return ''
+      let d
+      if (Array.isArray(time)) {
+        d = new Date(time[0], time[1] - 1, time[2], time[3] || 0, time[4] || 0, time[5] || 0)
+      } else {
+        d = new Date(time)
+      }
+      if (isNaN(d.getTime())) return ''
+      return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
     },
     formatDate(dateStr) {
       if (!dateStr) return ''

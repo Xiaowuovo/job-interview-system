@@ -345,6 +345,21 @@ export default {
   border-radius: var(--lc-radius-lg);
   width: 100%;
   transition: all var(--lc-transition);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.options /deep/ .el-radio__input {
+  flex-shrink: 0;
+}
+
+.options /deep/ .el-radio__label {
+  flex: 1;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
+  padding-left: 10px;
 }
 
 .options /deep/ .el-radio:hover {

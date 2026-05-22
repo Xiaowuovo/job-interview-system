@@ -259,7 +259,9 @@ export default {
         category: row.category,
         difficulty: row.difficulty,
         importance: row.importance || 3,
-        tags: row.tags || []
+        tags: typeof row.tags === 'string' && row.tags
+          ? row.tags.split(',').map(t => t.trim()).filter(Boolean)
+          : (Array.isArray(row.tags) ? row.tags : [])
       }
       this.dialogVisible = true
     },
@@ -282,8 +284,10 @@ export default {
       this.$refs.knowledgeForm.validate(valid => {
         if (valid) {
           this.submitting = true
+          const f = this.knowledgeForm
           const data = {
-            ...this.knowledgeForm,
+            ...f,
+            tags: Array.isArray(f.tags) ? f.tags.join(',') : (f.tags || ''),
             authorId: this.user.id
           }
           

@@ -330,18 +330,28 @@ export default {
     editQuestion(row) {
       this.dialogTitle = '编辑题目'
       this.isEdit = true
+      const options = [
+        row.optionA || '',
+        row.optionB || '',
+        row.optionC || '',
+        row.optionD || ''
+      ]
+      const rawTags = row.tags
+      const tagsArr = typeof rawTags === 'string' && rawTags
+        ? rawTags.split(',').map(t => t.trim()).filter(Boolean)
+        : (Array.isArray(rawTags) ? rawTags : [])
       this.questionForm = {
         id: row.id,
         type: row.type,
         title: row.title,
         content: row.content,
-        options: row.options || ['', '', '', ''],
-        answer: row.answer,
+        options,
+        answer: row.correctAnswer || row.answer || '',
         explanation: row.explanation,
         category: row.category,
         difficulty: row.difficulty,
         score: row.score || 10,
-        tags: row.tags || []
+        tags: tagsArr
       }
       this.dialogVisible = true
     },
@@ -364,13 +374,26 @@ export default {
       this.$refs.questionForm.validate(valid => {
         if (valid) {
           this.submitting = true
+          const f = this.questionForm
           const data = {
-            ...this.questionForm,
-            teacherId: this.user.id
+            type: f.type,
+            title: f.title,
+            content: f.content,
+            correctAnswer: Array.isArray(f.answer) ? f.answer.join(',') : f.answer,
+            explanation: f.explanation,
+            category: f.category,
+            difficulty: f.difficulty,
+            tags: Array.isArray(f.tags) ? f.tags.join(',') : (f.tags || ''),
+            createdBy: this.user.id
           }
-          
-          if (data.type === 'MULTIPLE_CHOICE' && Array.isArray(data.answer)) {
-            data.answer = data.answer.join(',')
+          if (f.id) data.id = f.id
+          if (f.type === 'CHOICE' || f.type === 'MULTIPLE_CHOICE') {
+            data.optionA = f.options[0] || ''
+            data.optionB = f.options[1] || ''
+            data.optionC = f.options[2] || ''
+            data.optionD = f.options[3] || ''
+            if (f.options[4] !== undefined) data.optionE = f.options[4]
+            if (f.options[5] !== undefined) data.optionF = f.options[5]
           }
           
           const request = this.isEdit

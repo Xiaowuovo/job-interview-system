@@ -246,7 +246,9 @@ export default {
         content: row.content,
         category: row.category,
         difficulty: row.difficulty || '中等',
-        tags: row.tags || []
+        tags: typeof row.tags === 'string' && row.tags
+          ? row.tags.split(',').map(t => t.trim()).filter(Boolean)
+          : (Array.isArray(row.tags) ? row.tags : [])
       }
       this.dialogVisible = true
     },
@@ -269,8 +271,10 @@ export default {
       this.$refs.tutorialForm.validate(valid => {
         if (valid) {
           this.submitting = true
+          const f = this.tutorialForm
           const data = {
-            ...this.tutorialForm,
+            ...f,
+            tags: Array.isArray(f.tags) ? f.tags.join(',') : (f.tags || ''),
             authorId: this.user.id
           }
           
